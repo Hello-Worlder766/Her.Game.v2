@@ -106,6 +106,7 @@ canvas {
   line-height: 2.2;
   max-width: 360px;
   padding: 0 20px;
+  white-space: pre-line;
 }
 
 #overlay button {
@@ -144,7 +145,8 @@ canvas {
 
 <canvas id="game" width="480" height="320"></canvas>
 
-<div id="power-indicator" id="power-ui"></div>
+<!-- FIX #1: removed duplicate id="power-ui" -->
+<div id="power-indicator"></div>
 
 <div id="controls">
   <button class="btn" id="btn-left">◀</button>
@@ -154,7 +156,11 @@ canvas {
 
 <div id="overlay">
   <h1>💕 Rescue Nathan! 💕</h1>
-  <p>Nathan has been captured by a spooky ghost!<br><br>Play as Jerrie 👸 — collect all the hearts ♥ and sweet treats 🍰 to set him free!<br><br>Arrow keys or buttons to move. Jump to avoid ghosts!</p>
+  <p>Nathan has been captured by a spooky ghost!
+
+Play as Jerrie 👸 — collect all the hearts ♥ and sweet treats 🍰 to set him free!
+
+Arrow keys or buttons to move. Jump to avoid ghosts!</p>
   <button id="start-btn">START ADVENTURE ♥</button>
 </div>
 
@@ -193,12 +199,10 @@ drawStars()
 const canvas = document.getElementById('game')
 const ctx = canvas.getContext('2d')
 const W = 480, H = 320
-const TILE = 32
 const GRAVITY = 0.55
 const JUMP_FORCE = -12
 const SPEED = 3.5
 
-// Colors
 const C = {
   sky1: '#2d0a4e', sky2: '#1a0a2e',
   ground: '#7b3fa0', groundTop: '#c264e8',
@@ -213,12 +217,11 @@ const C = {
   particle: '#ff69b4'
 }
 
-// Level definitions: platforms, hearts, treats, ghosts, cage position
 const LEVELS = [
   {
     bg1:'#2d0a4e', bg2:'#1a0a2e',
     platforms:[
-      {x:0,   y:288, w:480, h:32}, // ground
+      {x:0,   y:288, w:480, h:32},
       {x:80,  y:224, w:96,  h:16},
       {x:240, y:192, w:96,  h:16},
       {x:360, y:240, w:80,  h:16},
@@ -361,7 +364,7 @@ function update(){
     player.deadTimer--
     if(player.deadTimer<=0){
       if(lives<=0){
-        showOverlay('💀 OH NO!', 'The ghost got Nathan... try again Jerrie!', 'TRY AGAIN ♥', ()=>{ lives=3; initLevel(level); gameRunning=true })
+        showOverlay('💀 OH NO!', 'The ghost got Nathan...\n\nTry again Jerrie!', 'TRY AGAIN ♥', ()=>{ lives=3; initLevel(level); gameRunning=true })
       } else {
         initLevel(level)
       }
@@ -369,7 +372,6 @@ function update(){
     return
   }
 
-  // Input
   let dx = 0
   if(keys.left) dx = -SPEED
   if(keys.right) dx = SPEED
@@ -378,7 +380,6 @@ function update(){
   if(dx > 0) player.facing = 1
   if(dx < 0) player.facing = -1
 
-  // Jump
   if(keys.jump && player.onGround && !player.jumpPressed){
     player.vy = JUMP_FORCE
     player.jumpPressed = true
@@ -391,7 +392,6 @@ function update(){
   player.y += player.vy
   player.onGround = false
 
-  // Platform collision
   platforms.forEach(p=>{
     if(rectOverlap(player.x, player.y, 20, 28, p.x, p.y, p.w, p.h)){
       if(player.vy >= 0 && player.y + 28 - player.vy <= p.y + 2){
@@ -408,20 +408,19 @@ function update(){
     }
   })
 
-  // Bounds
   if(player.x < 0) player.x = 0
   if(player.x > W - 20) player.x = W - 20
-  if(player.y > H + 40){
+
+  // FIX #3: guard with !player.dead to prevent double lives decrement
+  if(player.y > H + 40 && !player.dead){
     lives--
     player.dead = true
     player.deadTimer = 60
-    spawnParticles(player.x+10, player.y, '#ff69b4', 12)
+    spawnParticles(player.x+10, H, '#ff69b4', 12)
   }
 
-  // Camera (simple follow)
-  camX = 0 // fixed for now since level fits in 480px
+  camX = 0
 
-  // Hearts
   hearts.forEach(h=>{
     if(!h.collected && rectOverlap(player.x, player.y, 20, 28, h.x-10, h.y-10, 20, 20)){
       h.collected = true
@@ -432,7 +431,6 @@ function update(){
     }
   })
 
-  // Treats
   treats.forEach(t=>{
     if(!t.collected && rectOverlap(player.x, player.y, 20, 28, t.x-12, t.y-12, 24, 24)){
       t.collected = true
@@ -442,20 +440,20 @@ function update(){
     }
   })
 
+  // FIX #4: only update power UI once per second
   if(powerTimer > 0){
     powerTimer--
-    updateHeartsUI()
+    if(powerTimer % 60 === 0) updateHeartsUI()
   }
 
-  // Ghosts
   ghosts.forEach(g=>{
     g.phase += 0.05
     g.x += g.dir * g.speed
     if(g.x > g.startX + g.range || g.x < g.startX - g.range) g.dir *= -1
-    // Floating bob
     g.floatY = Math.sin(g.phase) * 6
 
-    if(powerTimer <= 0 && rectOverlap(player.x, player.y, 20, 28, g.x-14, g.y-14+g.floatY, 28, 28)){
+    // FIX #3: guard ghost collision with !player.dead
+    if(!player.dead && powerTimer <= 0 && rectOverlap(player.x, player.y, 20, 28, g.x-14, g.y-14+g.floatY, 28, 28)){
       lives--
       player.dead = true
       player.deadTimer = 80
@@ -464,16 +462,16 @@ function update(){
     }
   })
 
-  // Cage / win
   if(cageOpen && rectOverlap(player.x, player.y, 20, 28, cage.x-16, cage.y-28, 36, 48)){
     winTimer++
     if(winTimer > 30){
       won = true
       if(level < LEVELS.length - 1){
-        showOverlay(`💕 LEVEL ${level+1} CLEAR!`, `Amazing Jerrie! Keep going to rescue Nathan!`, 'NEXT LEVEL ♥', ()=>{
+        showOverlay(`💕 LEVEL ${level+1} CLEAR!`, `Amazing Jerrie!\n\nKeep going to rescue Nathan!`, 'NEXT LEVEL ♥', ()=>{
           level++; initLevel(level); gameRunning=true; won=false; winTimer=0
         })
       } else {
+        // FIX #5: \n\n renders correctly now via white-space: pre-line on #overlay p
         showOverlay('🎉 YOU DID IT! 💕', '"You set me free, hooray we can snuggle now!"\n\n— Nathan 💕', 'PLAY AGAIN ♥', ()=>{
           level=0; lives=3; initLevel(level); gameRunning=true; won=false; winTimer=0
         })
@@ -483,7 +481,6 @@ function update(){
     winTimer = 0
   }
 
-  // Particles
   particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-- })
   particles = particles.filter(p=>p.life>0)
 }
@@ -494,54 +491,35 @@ function drawPrincess(x, y, facing, powered){
   ctx.translate(x+10, y)
   if(facing < 0) ctx.scale(-1,1)
 
-  // Glow if powered
   if(powered){
     ctx.shadowColor = '#ffe066'
     ctx.shadowBlur = 14
   }
 
-  // Dress
   ctx.fillStyle = C.princessDress
   ctx.fillRect(-6, 12, 12, 16)
-  // Dress flare
   ctx.fillStyle = '#ff79b6'
   ctx.fillRect(-9, 22, 18, 6)
-
-  // Body
   ctx.fillStyle = C.princess
   ctx.fillRect(-5, 4, 10, 12)
-
-  // Head
   ctx.fillStyle = '#ffd6a5'
   ctx.fillRect(-6, -8, 12, 12)
-
-  // Hair
   ctx.fillStyle = C.princessHair
   ctx.fillRect(-7, -10, 14, 6)
   ctx.fillRect(-8, -8, 4, 10)
-
-  // Crown
   ctx.fillStyle = C.princessCrown
   ctx.fillRect(-5, -14, 10, 5)
   ctx.fillRect(-7, -12, 3, 3)
   ctx.fillRect(4, -12, 3, 3)
   ctx.fillRect(-1, -16, 3, 4)
-
-  // Eyes
   ctx.fillStyle = '#3d2000'
   ctx.fillRect(0, -4, 2, 2)
   ctx.fillRect(-4, -4, 2, 2)
-
-  // Smile
   ctx.fillStyle = '#c0506a'
   ctx.fillRect(-2, 0, 5, 1)
-
-  // Arms
   ctx.fillStyle = C.princess
   ctx.fillRect(-9, 6, 4, 8)
   ctx.fillRect(6, 6, 4, 8)
-
-  // Legs
   ctx.fillStyle = '#f8b4d9'
   ctx.fillRect(-4, 26, 4, 6)
   ctx.fillRect(1, 26, 4, 6)
@@ -550,60 +528,47 @@ function drawPrincess(x, y, facing, powered){
 }
 
 function drawNathan(x, y, cageOpen){
-  // Cage
   ctx.save()
   ctx.translate(x, y)
   ctx.fillStyle = C.cage
-  ctx.fillRect(-16, -32, 36, 4) // top
-  ctx.fillRect(-16, 12, 36, 4)  // bottom
+  ctx.fillRect(-16, -32, 36, 4)
+  ctx.fillRect(-16, 12, 36, 4)
   for(let i=0;i<5;i++){
     ctx.fillStyle = cageOpen ? '#aaaaaa44' : C.cageBar
     ctx.fillRect(-14 + i*8, -28, 3, 40)
   }
-  // Door open effect
   if(cageOpen){
     ctx.fillStyle = '#ffe06680'
     ctx.fillRect(-16, -32, 36, 48)
   }
   ctx.restore()
 
-  // Nathan inside cage
   ctx.save()
   ctx.translate(x, y)
-
-  // Body
   ctx.fillStyle = C.nathanShirt
   ctx.fillRect(-5, -16, 10, 14)
-  // Head
   ctx.fillStyle = C.nathan
   ctx.fillRect(-6, -28, 12, 12)
-  // Hair
   ctx.fillStyle = C.nathanHair
   ctx.fillRect(-6, -30, 12, 6)
-  // Eyes (worried look becomes happy when open)
   ctx.fillStyle = '#3d2000'
   ctx.fillRect(-3, -22, 2, 2)
   ctx.fillRect(1, -22, 2, 2)
   if(cageOpen){
-    // Happy mouth
     ctx.fillStyle = '#c06050'
     ctx.fillRect(-3, -17, 6, 2)
     ctx.fillRect(-4, -18, 2, 2)
     ctx.fillRect(2, -18, 2, 2)
   } else {
-    // Sad mouth
     ctx.fillStyle = '#a05040'
     ctx.fillRect(-2, -16, 4, 1)
   }
-  // Arms
   ctx.fillStyle = C.nathan
   ctx.fillRect(-9, -14, 4, 8)
   ctx.fillRect(5, -14, 4, 8)
-  // Legs
   ctx.fillStyle = '#2255aa'
   ctx.fillRect(-4, -4, 4, 6)
   ctx.fillRect(1, -4, 4, 6)
-
   ctx.restore()
 }
 
@@ -615,24 +580,19 @@ function drawGhost(g){
   const alpha = powerTimer > 0 ? 0.3 : 1
   ctx.globalAlpha = alpha
 
-  // Body
   ctx.fillStyle = C.ghost
   ctx.beginPath()
   ctx.arc(0, -10, 14, Math.PI, 0)
   ctx.rect(-14, -10, 28, 20)
-  // Wavy bottom
   ctx.moveTo(-14, 10)
   for(let i=0;i<4;i++){
     ctx.quadraticCurveTo(-10+i*7, 18, -7+i*7, 10)
   }
   ctx.fill()
 
-  // Eyes
   ctx.fillStyle = C.ghostEye
   ctx.fillRect(-6, -14, 4, 5)
   ctx.fillRect(2, -14, 4, 5)
-
-  // Mouth
   ctx.fillStyle = '#4060cc'
   ctx.fillRect(-4, -5, 8, 3)
 
@@ -647,7 +607,6 @@ function drawHeart(x, y, t){
   ctx.fillStyle = C.heart
   ctx.shadowColor = C.heartGlow
   ctx.shadowBlur = 10
-  // Simple pixel heart
   ctx.fillRect(-5, -3, 4, 4)
   ctx.fillRect(1, -3, 4, 4)
   ctx.fillRect(-6, -1, 12, 4)
@@ -663,7 +622,6 @@ function drawTreat(x, y, t){
   ctx.translate(x, y + bob)
   ctx.shadowColor = '#ffe066'
   ctx.shadowBlur = 12
-  // Cake slice
   ctx.fillStyle = '#ffe066'
   ctx.fillRect(-10, -4, 20, 14)
   ctx.fillStyle = '#ff9de2'
@@ -680,7 +638,6 @@ function drawPlatform(p){
   ctx.fillRect(p.x, p.y+2, p.w, p.h-2)
   ctx.fillStyle = C.platformTop
   ctx.fillRect(p.x, p.y, p.w, 4)
-  // Little dots
   ctx.fillStyle = '#c264e880'
   for(let i=4;i<p.w-4;i+=12){
     ctx.fillRect(p.x+i, p.y+6, 4, 2)
@@ -689,7 +646,6 @@ function drawPlatform(p){
 
 let tick = 0
 function draw(){
-  // Background gradient
   const L = LEVELS[level]
   const grad = ctx.createLinearGradient(0,0,0,H)
   grad.addColorStop(0, L.bg1)
@@ -697,27 +653,16 @@ function draw(){
   ctx.fillStyle = grad
   ctx.fillRect(0,0,W,H)
 
-  // Platforms
   platforms.forEach(drawPlatform)
-
-  // Hearts
   hearts.forEach(h=>{ if(!h.collected) drawHeart(h.x, h.y, tick) })
-
-  // Treats
   treats.forEach(t=>{ if(!t.collected) drawTreat(t.x, t.y, tick) })
-
-  // Cage + Nathan
   drawNathan(cage.x, cage.y, cageOpen)
-
-  // Ghosts
   ghosts.forEach(drawGhost)
 
-  // Player
   if(!player.dead){
     drawPrincess(player.x, player.y, player.facing, powerTimer > 0)
   }
 
-  // Particles
   particles.forEach(p=>{
     ctx.save()
     ctx.globalAlpha = p.life/p.maxLife
@@ -728,7 +673,6 @@ function draw(){
     ctx.restore()
   })
 
-  // Win flash
   if(cageOpen && !won){
     ctx.fillStyle = '#ffe06620'
     ctx.fillRect(0,0,W,H)
@@ -782,9 +726,12 @@ function holdBtn(id, key){
   btn.addEventListener('mouseup',    ()=>keys[key]=false)
   btn.addEventListener('mouseleave', ()=>keys[key]=false)
 }
+
 holdBtn('btn-left','left')
 holdBtn('btn-right','right')
 holdBtn('btn-jump','jump')
+
+window.addEventListener('blur', ()=>{ keys.left=false; keys.right=false; keys.jump=false })
 
 // Prevent double-tap zoom
 let lastTouch = 0
