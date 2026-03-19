@@ -777,8 +777,10 @@ function holdBtn(id, key){
   const btn = document.getElementById(id)
   btn.addEventListener('touchstart', e=>{ e.preventDefault(); keys[key]=true }, {passive:false})
   btn.addEventListener('touchend',   e=>{ e.preventDefault(); keys[key]=false }, {passive:false})
-  btn.addEventListener('mousedown',  ()=>keys[key]=true)
+  btn.addEventListener('touchcancel',e=>{ e.preventDefault(); keys[key]=false }, {passive:false})
+  btn.addEventListener('mousedown',  e=>{ e.preventDefault(); keys[key]=true })
   btn.addEventListener('mouseup',    ()=>keys[key]=false)
+  btn.addEventListener('mouseleave', ()=>keys[key]=false)
 }
 holdBtn('btn-left','left')
 holdBtn('btn-right','right')
