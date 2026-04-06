@@ -5,10 +5,21 @@
 <title>Rescue Nathan! 💕</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
+:root {
+  --pink: #ff69b4;
+  --pink-dark: #c0396a;
+  --pink-glow: #ff69b460;
+  --pink-deep: #ff4d8d;
+  --gold: #ffe066;
+  --purple: #9b59b6;
+  --bg: #1a0a2e;
+  --text-soft: #ffb3d9;
+}
+
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
 body {
-  background: #1a0a2e;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,13 +31,7 @@ body {
   -webkit-user-select: none;
 }
 
-#stars {
-  position: fixed;
-  top:0; left:0; width:100%; height:100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
+/* ── HUD BAR ─────────────────────────────────────── */
 #ui {
   position: relative;
   z-index: 2;
@@ -35,101 +40,248 @@ body {
   justify-content: space-between;
   width: 480px;
   max-width: 95vw;
-  padding: 8px 4px;
+  padding: 6px 2px;
+  gap: 6px;
 }
 
-#ui span {
-  color: #ffb3d9;
-  font-size: 7px;
-  text-shadow: 0 0 8px #ff69b4;
+.hud-pill {
+  background: rgba(255,105,180,0.10);
+  border: 1.5px solid rgba(255,105,180,0.35);
+  border-radius: 20px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(4px);
 }
 
-#hearts-ui { color: #ff4d8d !important; font-size: 9px !important; }
+.hud-pill span {
+  color: var(--text-soft);
+  font-size: 6.5px;
+  letter-spacing: 0.5px;
+}
 
-canvas {
+#hearts-ui {
+  color: var(--pink-deep) !important;
+  font-size: 7.5px !important;
+  text-shadow: 0 0 8px var(--pink-glow);
+}
+
+#lives-ui { color: var(--gold) !important; text-shadow: 0 0 6px #ffe06680; }
+#level-ui { color: #c8a0ff !important; text-shadow: 0 0 6px #9b59b640; }
+
+/* ── CANVAS ──────────────────────────────────────── */
+canvas#game {
   display: block;
-  border: 3px solid #ff69b4;
-  box-shadow: 0 0 30px #ff69b460, 0 0 60px #9b59b620;
+  border: 2px solid rgba(255,105,180,0.6);
+  box-shadow:
+    0 0 0 1px rgba(255,105,180,0.15),
+    0 0 24px rgba(255,105,180,0.3),
+    0 0 60px rgba(155,89,182,0.15);
   image-rendering: pixelated;
   touch-action: none;
   position: relative;
   z-index: 2;
   max-width: 95vw;
+  border-radius: 4px;
 }
 
+/* ── POWER INDICATOR ─────────────────────────────── */
+#power-indicator {
+  position: relative;
+  z-index: 2;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#power-indicator span {
+  background: linear-gradient(90deg, #ffe06622, #ffe06644, #ffe06622);
+  border: 1px solid #ffe06680;
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: var(--gold);
+  font-size: 6px;
+  letter-spacing: 1px;
+  animation: powerPulse 1s ease-in-out infinite;
+}
+
+@keyframes powerPulse {
+  0%,100% { box-shadow: 0 0 6px #ffe06640; }
+  50%      { box-shadow: 0 0 14px #ffe066aa; }
+}
+
+/* ── CONTROL BUTTONS ─────────────────────────────── */
 #controls {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 10px;
   z-index: 2;
   position: relative;
+  align-items: center;
 }
 
 .btn {
-  background: #3d1a5e;
-  border: 2px solid #ff69b4;
-  color: #ffb3d9;
+  position: relative;
+  background: rgba(30, 8, 50, 0.85);
+  border: 2px solid var(--pink);
+  color: var(--pink);
   font-family: 'Press Start 2P', monospace;
-  font-size: 16px;
-  padding: 14px 20px;
-  border-radius: 8px;
+  font-size: 15px;
+  width: 58px;
+  height: 52px;
+  border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 0 10px #ff69b430;
   touch-action: manipulation;
+  transition: transform 80ms, box-shadow 80ms, background 80ms;
+  box-shadow:
+    0 4px 0 var(--pink-dark),
+    0 0 12px var(--pink-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* pressed state prep */
+  top: 0;
 }
-.btn:active { background: #5d2a7e; transform: scale(0.95); }
 
+.btn:active, .btn.pressed {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 var(--pink-dark),
+    0 0 8px var(--pink-glow);
+  background: rgba(60, 15, 80, 0.95);
+}
+
+/* jump button slightly bigger + gold accent */
+#btn-jump {
+  width: 64px;
+  height: 58px;
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow:
+    0 4px 0 #a07000,
+    0 0 14px #ffe06650;
+  font-size: 17px;
+}
+#btn-jump:active, #btn-jump.pressed {
+  box-shadow:
+    0 1px 0 #a07000,
+    0 0 8px #ffe06650;
+}
+
+/* d-pad label under directional buttons */
+.btn-label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5px;
+  color: rgba(255,179,217,0.5);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ── OVERLAY ─────────────────────────────────────── */
 #overlay {
   position: fixed;
   top:0; left:0; width:100%; height:100%;
-  background: #1a0a2eee;
+  background: rgba(20, 6, 40, 0.94);
+  backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 10;
-  gap: 20px;
+  gap: 18px;
 }
 
+/* decorative top/bottom border lines */
+#overlay::before, #overlay::after {
+  content: '';
+  position: absolute;
+  left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pink), transparent);
+}
+#overlay::before { top: 60px; }
+#overlay::after  { bottom: 60px; }
+
 #overlay h1 {
-  color: #ff69b4;
+  color: var(--pink);
   font-size: clamp(10px, 3vw, 18px);
   text-align: center;
-  text-shadow: 0 0 20px #ff69b4;
+  text-shadow: 0 0 20px var(--pink), 0 0 40px var(--pink-glow);
   line-height: 2;
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%,100% { text-shadow: 0 0 16px var(--pink), 0 0 32px var(--pink-glow); }
+  50%      { text-shadow: 0 0 28px var(--pink), 0 0 56px var(--pink-glow); }
 }
 
 #overlay p {
-  color: #ffb3d9;
-  font-size: clamp(7px, 2vw, 10px);
+  color: var(--text-soft);
+  font-size: clamp(6px, 1.8vw, 9px);
   text-align: center;
-  line-height: 2.2;
-  max-width: 360px;
+  line-height: 2.4;
+  max-width: 340px;
   padding: 0 20px;
   white-space: pre-line;
+  opacity: 0.9;
+}
+
+/* Decorative card behind the text */
+.overlay-card {
+  background: rgba(255,105,180,0.05);
+  border: 1px solid rgba(255,105,180,0.2);
+  border-radius: 12px;
+  padding: 18px 28px;
+  max-width: 380px;
+  text-align: center;
 }
 
 #overlay button {
-  background: #ff69b4;
+  position: relative;
+  background: var(--pink-deep);
   border: none;
   color: white;
   font-family: 'Press Start 2P', monospace;
   font-size: clamp(8px, 2vw, 11px);
-  padding: 14px 28px;
-  border-radius: 8px;
+  padding: 14px 32px;
+  border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 0 20px #ff69b460;
-  margin-top: 10px;
+  box-shadow:
+    0 5px 0 var(--pink-dark),
+    0 0 24px var(--pink-glow);
+  transition: transform 80ms, box-shadow 80ms;
+  letter-spacing: 0.5px;
 }
-#overlay button:hover { background: #ff4d8d; }
 
-#power-indicator {
-  position: relative;
-  z-index: 2;
-  color: #ffe066;
-  font-size: 7px;
-  height: 16px;
-  text-shadow: 0 0 8px #ffe066;
+#overlay button:hover {
+  background: var(--pink);
+  box-shadow: 0 5px 0 var(--pink-dark), 0 0 36px var(--pink-glow);
+}
+
+#overlay button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--pink-dark), 0 0 16px var(--pink-glow);
+}
+
+/* small decorative hearts that float */
+.deco-heart {
+  position: absolute;
+  color: var(--pink);
+  font-size: 10px;
+  opacity: 0.3;
+  animation: floatHeart linear infinite;
+  pointer-events: none;
+}
+@keyframes floatHeart {
+  0%   { transform: translateY(0) scale(1);   opacity: 0.3; }
+  50%  { opacity: 0.6; }
+  100% { transform: translateY(-60px) scale(0.6); opacity: 0; }
 }
 </style>
 </head>
@@ -138,610 +290,384 @@ canvas {
 <canvas id="stars-bg" style="position:fixed;top:0;left:0;z-index:0;pointer-events:none;"></canvas>
 
 <div id="ui">
-  <span id="level-ui">LEVEL 1</span>
-  <span id="hearts-ui">♥ 0/5</span>
-  <span id="lives-ui">LIVES: 3</span>
+  <div class="hud-pill"><span id="level-ui">LEVEL 1</span></div>
+  <div class="hud-pill"><span id="hearts-ui">♥ 0/5</span></div>
+  <div class="hud-pill"><span id="lives-ui">LIVES: 3</span></div>
 </div>
 
 <canvas id="game" width="480" height="320"></canvas>
 
-<!-- FIX #1: removed duplicate id="power-ui" -->
 <div id="power-indicator"></div>
 
 <div id="controls">
-  <button class="btn" id="btn-left">◀</button>
-  <button class="btn" id="btn-jump">▲</button>
-  <button class="btn" id="btn-right">▶</button>
+  <div style="position:relative">
+    <button class="btn" id="btn-left">◀</button>
+    <span class="btn-label">LEFT</span>
+  </div>
+  <div style="position:relative">
+    <button class="btn" id="btn-jump">▲</button>
+    <span class="btn-label">JUMP</span>
+  </div>
+  <div style="position:relative">
+    <button class="btn" id="btn-right">▶</button>
+    <span class="btn-label">RIGHT</span>
+  </div>
 </div>
 
 <div id="overlay">
+  <!-- floating deco hearts injected by JS -->
   <h1>💕 Rescue Nathan! 💕</h1>
-  <p>Nathan has been captured by a spooky ghost!
+  <div class="overlay-card">
+    <p id="ov-msg">Nathan has been captured by a spooky ghost!
 
 Play as Jerrie 👸 — collect all the hearts ♥ and sweet treats 🍰 to set him free!
 
 Arrow keys or buttons to move. Jump to avoid ghosts!</p>
+  </div>
   <button id="start-btn">START ADVENTURE ♥</button>
 </div>
 
 <script>
-// ---- STAR BACKGROUND ----
-const starCanvas = document.getElementById('stars-bg')
-const starCtx = starCanvas.getContext('2d')
-function resizeStars(){
-  starCanvas.width = window.innerWidth
-  starCanvas.height = window.innerHeight
+// ── DECO HEARTS ──────────────────────────────────────
+const ov = document.getElementById('overlay');
+for(let i = 0; i < 8; i++){
+  const h = document.createElement('span');
+  h.className = 'deco-heart';
+  h.textContent = '♥';
+  h.style.left = (8 + Math.random() * 84) + '%';
+  h.style.bottom = (5 + Math.random() * 30) + '%';
+  h.style.animationDuration = (3 + Math.random() * 4) + 's';
+  h.style.animationDelay = (Math.random() * 4) + 's';
+  h.style.fontSize = (8 + Math.random() * 10) + 'px';
+  ov.appendChild(h);
 }
-resizeStars()
-window.addEventListener('resize', resizeStars)
+
+// ── STAR BACKGROUND ──────────────────────────────────
+const starCanvas = document.getElementById('stars-bg');
+const starCtx = starCanvas.getContext('2d');
+function resizeStars(){
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+}
+resizeStars();
+window.addEventListener('resize', resizeStars);
 const stars = Array.from({length:80}, ()=>({
   x: Math.random()*window.innerWidth,
   y: Math.random()*window.innerHeight,
   r: Math.random()*1.5+0.3,
   a: Math.random(),
   speed: Math.random()*0.01+0.005
-}))
+}));
 function drawStars(){
-  starCtx.clearRect(0,0,starCanvas.width,starCanvas.height)
+  starCtx.clearRect(0,0,starCanvas.width,starCanvas.height);
   stars.forEach(s=>{
-    s.a += s.speed
-    const alpha = 0.3 + 0.7*Math.abs(Math.sin(s.a))
-    starCtx.beginPath()
-    starCtx.arc(s.x, s.y, s.r, 0, Math.PI*2)
-    starCtx.fillStyle = `rgba(255,200,230,${alpha})`
-    starCtx.fill()
-  })
-  requestAnimationFrame(drawStars)
+    s.a += s.speed;
+    const alpha = 0.3 + 0.7*Math.abs(Math.sin(s.a));
+    starCtx.beginPath();
+    starCtx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    starCtx.fillStyle = `rgba(255,200,230,${alpha})`;
+    starCtx.fill();
+  });
+  requestAnimationFrame(drawStars);
 }
-drawStars()
+drawStars();
 
-// ---- GAME ----
-const canvas = document.getElementById('game')
-const ctx = canvas.getContext('2d')
-const W = 480, H = 320
-const GRAVITY = 0.55
-const JUMP_FORCE = -12
-const SPEED = 3.5
+// ── GAME ─────────────────────────────────────────────
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 480, H = 320;
+const GRAVITY = 0.55, JUMP_FORCE = -12, SPEED = 3.5;
 
 const C = {
-  sky1: '#2d0a4e', sky2: '#1a0a2e',
-  ground: '#7b3fa0', groundTop: '#c264e8',
-  platform: '#5c2d8a', platformTop: '#a855d4',
-  heart: '#ff4d8d', heartGlow: '#ff69b490',
-  treat: '#ffe066', treatGlow: '#ffe06680',
-  cage: '#888', cageBar: '#aaa',
-  ghost: '#b0c4ff', ghostEye: '#3050ff',
-  princess: '#ff9de2', princessDress: '#ff4da6',
-  princessHair: '#4a2800', princessCrown: '#ffe066',
-  nathan: '#ffd6a5', nathanShirt: '#4a90d9', nathanHair: '#3d2000',
-  particle: '#ff69b4'
-}
+  sky1:'#2d0a4e', sky2:'#1a0a2e',
+  ground:'#7b3fa0', groundTop:'#c264e8',
+  platform:'#5c2d8a', platformTop:'#a855d4',
+  heart:'#ff4d8d', heartGlow:'#ff69b490',
+  treat:'#ffe066', treatGlow:'#ffe06680',
+  cage:'#888', cageBar:'#aaa',
+  ghost:'#b0c4ff', ghostEye:'#3050ff',
+  princess:'#ff9de2', princessDress:'#ff4da6',
+  princessHair:'#4a2800', princessCrown:'#ffe066',
+  nathan:'#ffd6a5', nathanShirt:'#4a90d9', nathanHair:'#3d2000',
+  particle:'#ff69b4'
+};
 
 const LEVELS = [
   {
     bg1:'#2d0a4e', bg2:'#1a0a2e',
-    platforms:[
-      {x:0,   y:288, w:480, h:32},
-      {x:80,  y:224, w:96,  h:16},
-      {x:240, y:192, w:96,  h:16},
-      {x:360, y:240, w:80,  h:16},
-      {x:150, y:160, w:64,  h:16},
-    ],
-    hearts:[
-      {x:100, y:200},{x:260, y:168},{x:375, y:216},{x:170, y:136},{x:420, y:200}
-    ],
-    treats:[{x:310, y:160}],
-    ghosts:[
-      {x:200, y:256, dir:1, range:120, speed:1.2},
-      {x:360, y:208, dir:-1, range:80, speed:1.5},
-    ],
-    cage:{x:420, y:240},
-    totalHearts: 5
+    platforms:[{x:0,y:288,w:480,h:32},{x:80,y:224,w:96,h:16},{x:240,y:192,w:96,h:16},{x:360,y:240,w:80,h:16},{x:150,y:160,w:64,h:16}],
+    hearts:[{x:100,y:200},{x:260,y:168},{x:375,y:216},{x:170,y:136},{x:420,y:200}],
+    treats:[{x:310,y:160}],
+    ghosts:[{x:200,y:256,dir:1,range:120,speed:1.2},{x:360,y:208,dir:-1,range:80,speed:1.5}],
+    cage:{x:420,y:240}, totalHearts:5
   },
   {
     bg1:'#0a2e1a', bg2:'#0a1a2e',
-    platforms:[
-      {x:0,   y:288, w:160, h:32},
-      {x:200, y:288, w:120, h:32},
-      {x:360, y:288, w:120, h:32},
-      {x:64,  y:224, w:80,  h:16},
-      {x:200, y:208, w:80,  h:16},
-      {x:320, y:192, w:80,  h:16},
-      {x:128, y:160, w:64,  h:16},
-      {x:280, y:144, w:64,  h:16},
-      {x:400, y:224, w:64,  h:16},
-    ],
-    hearts:[
-      {x:80,  y:200},{x:210, y:184},{x:330, y:168},{x:145, y:136},{x:295, y:120},{x:410, y:200}
-    ],
-    treats:[{x:240, y:260},{x:420, y:260}],
-    ghosts:[
-      {x:100, y:256, dir:1, range:100, speed:1.4},
-      {x:220, y:256, dir:-1, range:80,  speed:1.6},
-      {x:200, y:176, dir:1, range:60,  speed:1.8},
-    ],
-    cage:{x:430, y:240},
-    totalHearts: 6
+    platforms:[{x:0,y:288,w:160,h:32},{x:200,y:288,w:120,h:32},{x:360,y:288,w:120,h:32},{x:64,y:224,w:80,h:16},{x:200,y:208,w:80,h:16},{x:320,y:192,w:80,h:16},{x:128,y:160,w:64,h:16},{x:280,y:144,w:64,h:16},{x:400,y:224,w:64,h:16}],
+    hearts:[{x:80,y:200},{x:210,y:184},{x:330,y:168},{x:145,y:136},{x:295,y:120},{x:410,y:200}],
+    treats:[{x:240,y:260},{x:420,y:260}],
+    ghosts:[{x:100,y:256,dir:1,range:100,speed:1.4},{x:220,y:256,dir:-1,range:80,speed:1.6},{x:200,y:176,dir:1,range:60,speed:1.8}],
+    cage:{x:430,y:240}, totalHearts:6
   },
   {
     bg1:'#2e0a0a', bg2:'#1a0a0a',
-    platforms:[
-      {x:0,   y:288, w:96,  h:32},
-      {x:160, y:288, w:80,  h:32},
-      {x:320, y:288, w:160, h:32},
-      {x:48,  y:240, w:64,  h:16},
-      {x:160, y:224, w:64,  h:16},
-      {x:256, y:208, w:64,  h:16},
-      {x:352, y:224, w:64,  h:16},
-      {x:96,  y:176, w:64,  h:16},
-      {x:224, y:160, w:64,  h:16},
-      {x:352, y:160, w:64,  h:16},
-      {x:160, y:112, w:64,  h:16},
-      {x:288, y:96,  w:96,  h:16},
-    ],
-    hearts:[
-      {x:64,  y:216},{x:170, y:200},{x:265, y:184},{x:362, y:200},
-      {x:108, y:152},{x:232, y:136},{x:360, y:136},{x:175, y:88}
-    ],
-    treats:[{x:310, y:64},{x:60, y:208}],
-    ghosts:[
-      {x:180, y:256, dir:1, range:80, speed:1.5},
-      {x:320, y:256, dir:-1, range:80, speed:1.7},
-      {x:220, y:192, dir:1, range:80,  speed:2.0},
-      {x:290, y:128, dir:-1, range:80,  speed:2.0},
-    ],
-    cage:{x:355, y:56},
-    totalHearts: 8
+    platforms:[{x:0,y:288,w:96,h:32},{x:160,y:288,w:80,h:32},{x:320,y:288,w:160,h:32},{x:48,y:240,w:64,h:16},{x:160,y:224,w:64,h:16},{x:256,y:208,w:64,h:16},{x:352,y:224,w:64,h:16},{x:96,y:176,w:64,h:16},{x:224,y:160,w:64,h:16},{x:352,y:160,w:64,h:16},{x:160,y:112,w:64,h:16},{x:288,y:96,w:96,h:16}],
+    hearts:[{x:64,y:216},{x:170,y:200},{x:265,y:184},{x:362,y:200},{x:108,y:152},{x:232,y:136},{x:360,y:136},{x:175,y:88}],
+    treats:[{x:310,y:64},{x:60,y:208}],
+    ghosts:[{x:180,y:256,dir:1,range:80,speed:1.5},{x:320,y:256,dir:-1,range:80,speed:1.7},{x:220,y:192,dir:1,range:80,speed:2.0},{x:290,y:128,dir:-1,range:80,speed:2.0}],
+    cage:{x:355,y:56}, totalHearts:8
   }
-]
+];
 
-let level = 0
-let heartsCollected = 0
-let lives = 3
-let gameRunning = false
-let won = false
-let powerTimer = 0
-let particles = []
-let cageOpen = false
-let winTimer = 0
-let camX = 0
-
-const keys = { left:false, right:false, jump:false }
-
-let player = {}
-let ghosts = []
-let hearts = []
-let treats = []
-let platforms = []
-let cage = {}
+let level=0, heartsCollected=0, lives=3, gameRunning=false, won=false;
+let powerTimer=0, particles=[], cageOpen=false, winTimer=0;
+const keys={left:false,right:false,jump:false};
+let player={}, ghosts=[], hearts=[], treats=[], platforms=[], cage={};
 
 function initLevel(lvl){
-  const L = LEVELS[lvl]
-  heartsCollected = 0
-  cageOpen = false
-  powerTimer = 0
-  particles = []
-  platforms = JSON.parse(JSON.stringify(L.platforms))
-  hearts = JSON.parse(JSON.stringify(L.hearts)).map(h=>({...h, collected:false}))
-  treats = JSON.parse(JSON.stringify(L.treats)).map(t=>({...t, collected:false}))
-  ghosts = JSON.parse(JSON.stringify(L.ghosts)).map(g=>({...g, startX:g.x, vy:0, phase: Math.random()*Math.PI*2}))
-  cage = {...L.cage}
-  player = { x:40, y:220, vx:0, vy:0, onGround:false, facing:1, jumpPressed:false, dead:false, deadTimer:0 }
-  camX = 0
-  updateHeartsUI()
+  const L=LEVELS[lvl];
+  heartsCollected=0; cageOpen=false; powerTimer=0; particles=[];
+  platforms=JSON.parse(JSON.stringify(L.platforms));
+  hearts=JSON.parse(JSON.stringify(L.hearts)).map(h=>({...h,collected:false}));
+  treats=JSON.parse(JSON.stringify(L.treats)).map(t=>({...t,collected:false}));
+  ghosts=JSON.parse(JSON.stringify(L.ghosts)).map(g=>({...g,startX:g.x,vy:0,phase:Math.random()*Math.PI*2}));
+  cage={...L.cage};
+  player={x:40,y:220,vx:0,vy:0,onGround:false,facing:1,jumpPressed:false,dead:false,deadTimer:0};
+  updateHUD();
 }
 
-function updateHeartsUI(){
-  document.getElementById('hearts-ui').textContent = `♥ ${heartsCollected}/${LEVELS[level].totalHearts}`
-  document.getElementById('level-ui').textContent = `LEVEL ${level+1}`
-  document.getElementById('lives-ui').textContent = `LIVES: ${lives}`
-  const pi = document.getElementById('power-indicator')
-  if(pi) pi.textContent = powerTimer > 0 ? `🍰 SWEET POWER! ${Math.ceil(powerTimer/60)}s` : ''
+function updateHUD(){
+  document.getElementById('hearts-ui').textContent=`♥ ${heartsCollected}/${LEVELS[level].totalHearts}`;
+  document.getElementById('level-ui').textContent=`LEVEL ${level+1}`;
+  document.getElementById('lives-ui').textContent=`LIVES: ${lives}`;
+  const pi=document.getElementById('power-indicator');
+  if(pi){
+    if(powerTimer>0){
+      pi.innerHTML=`<span>🍰 SWEET POWER! ${Math.ceil(powerTimer/60)}s</span>`;
+    } else {
+      pi.innerHTML='';
+    }
+  }
 }
 
-function spawnParticles(x, y, color, n=8){
+function spawnParticles(x,y,color,n=8){
   for(let i=0;i<n;i++){
-    const angle = (Math.PI*2/n)*i
-    particles.push({
-      x, y,
-      vx: Math.cos(angle)*2.5*(0.5+Math.random()),
-      vy: Math.sin(angle)*2.5*(0.5+Math.random()),
-      life: 40+Math.random()*20,
-      maxLife: 60,
-      color, r: 3+Math.random()*3
-    })
+    const angle=(Math.PI*2/n)*i;
+    particles.push({x,y,vx:Math.cos(angle)*2.5*(0.5+Math.random()),vy:Math.sin(angle)*2.5*(0.5+Math.random()),life:40+Math.random()*20,maxLife:60,color,r:3+Math.random()*3});
   }
 }
 
 function rectOverlap(ax,ay,aw,ah,bx,by,bw,bh){
-  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by
+  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
 }
 
 function update(){
-  if(!gameRunning || won) return
-
+  if(!gameRunning||won) return;
   if(player.dead){
-    player.deadTimer--
+    player.deadTimer--;
     if(player.deadTimer<=0){
       if(lives<=0){
-        showOverlay('💀 OH NO!', 'The ghost got Nathan...\n\nTry again Jerrie!', 'TRY AGAIN ♥', ()=>{ lives=3; initLevel(level); gameRunning=true })
-      } else {
-        initLevel(level)
-      }
+        showOverlay('💀 OH NO!','The ghost got Nathan...\n\nTry again Jerrie!','TRY AGAIN ♥',()=>{lives=3;initLevel(level);gameRunning=true;});
+      } else { initLevel(level); }
     }
-    return
+    return;
   }
-
-  let dx = 0
-  if(keys.left) dx = -SPEED
-  if(keys.right) dx = SPEED
-
-  player.vx = dx
-  if(dx > 0) player.facing = 1
-  if(dx < 0) player.facing = -1
-
-  if(keys.jump && player.onGround && !player.jumpPressed){
-    player.vy = JUMP_FORCE
-    player.jumpPressed = true
-    player.onGround = false
-  }
-  if(!keys.jump) player.jumpPressed = false
-
-  player.vy += GRAVITY
-  player.x += player.vx
-  player.y += player.vy
-  player.onGround = false
-
+  let dx=0;
+  if(keys.left) dx=-SPEED;
+  if(keys.right) dx=SPEED;
+  player.vx=dx;
+  if(dx>0) player.facing=1;
+  if(dx<0) player.facing=-1;
+  if(keys.jump&&player.onGround&&!player.jumpPressed){player.vy=JUMP_FORCE;player.jumpPressed=true;player.onGround=false;}
+  if(!keys.jump) player.jumpPressed=false;
+  player.vy+=GRAVITY; player.x+=player.vx; player.y+=player.vy; player.onGround=false;
   platforms.forEach(p=>{
-    if(rectOverlap(player.x, player.y, 20, 28, p.x, p.y, p.w, p.h)){
-      if(player.vy >= 0 && player.y + 28 - player.vy <= p.y + 2){
-        player.y = p.y - 28
-        player.vy = 0
-        player.onGround = true
-      } else if(player.vy < 0 && player.y - player.vy >= p.y + p.h - 2){
-        player.y = p.y + p.h
-        player.vy = 0
-      } else {
-        if(player.vx > 0) player.x = p.x - 20
-        if(player.vx < 0) player.x = p.x + p.w
-      }
+    if(rectOverlap(player.x,player.y,20,28,p.x,p.y,p.w,p.h)){
+      if(player.vy>=0&&player.y+28-player.vy<=p.y+2){player.y=p.y-28;player.vy=0;player.onGround=true;}
+      else if(player.vy<0&&player.y-player.vy>=p.y+p.h-2){player.y=p.y+p.h;player.vy=0;}
+      else{if(player.vx>0)player.x=p.x-20;if(player.vx<0)player.x=p.x+p.w;}
     }
-  })
-
-  if(player.x < 0) player.x = 0
-  if(player.x > W - 20) player.x = W - 20
-
-  // FIX #3: guard with !player.dead to prevent double lives decrement
-  if(player.y > H + 40 && !player.dead){
-    lives--
-    player.dead = true
-    player.deadTimer = 60
-    spawnParticles(player.x+10, H, '#ff69b4', 12)
-  }
-
-  camX = 0
-
+  });
+  if(player.x<0)player.x=0; if(player.x>W-20)player.x=W-20;
+  if(player.y>H+40&&!player.dead){lives--;player.dead=true;player.deadTimer=60;spawnParticles(player.x+10,H,'#ff69b4',12);}
   hearts.forEach(h=>{
-    if(!h.collected && rectOverlap(player.x, player.y, 20, 28, h.x-10, h.y-10, 20, 20)){
-      h.collected = true
-      heartsCollected++
-      spawnParticles(h.x, h.y, '#ff4d8d', 10)
-      if(heartsCollected >= LEVELS[level].totalHearts) cageOpen = true
-      updateHeartsUI()
+    if(!h.collected&&rectOverlap(player.x,player.y,20,28,h.x-10,h.y-10,20,20)){
+      h.collected=true;heartsCollected++;spawnParticles(h.x,h.y,'#ff4d8d',10);
+      if(heartsCollected>=LEVELS[level].totalHearts)cageOpen=true;
+      updateHUD();
     }
-  })
-
+  });
   treats.forEach(t=>{
-    if(!t.collected && rectOverlap(player.x, player.y, 20, 28, t.x-12, t.y-12, 24, 24)){
-      t.collected = true
-      powerTimer = 300
-      spawnParticles(t.x, t.y, '#ffe066', 12)
-      updateHeartsUI()
-    }
-  })
-
-  // FIX #4: only update power UI once per second
-  if(powerTimer > 0){
-    powerTimer--
-    if(powerTimer % 60 === 0) updateHeartsUI()
-  }
-
+    if(!t.collected&&rectOverlap(player.x,player.y,20,28,t.x-12,t.y-12,24,24)){t.collected=true;powerTimer=300;spawnParticles(t.x,t.y,'#ffe066',12);updateHUD();}
+  });
+  if(powerTimer>0){powerTimer--;if(powerTimer%60===0)updateHUD();}
   ghosts.forEach(g=>{
-    g.phase += 0.05
-    g.x += g.dir * g.speed
-    if(g.x > g.startX + g.range || g.x < g.startX - g.range) g.dir *= -1
-    g.floatY = Math.sin(g.phase) * 6
-
-    // FIX #3: guard ghost collision with !player.dead
-    if(!player.dead && powerTimer <= 0 && rectOverlap(player.x, player.y, 20, 28, g.x-14, g.y-14+g.floatY, 28, 28)){
-      lives--
-      player.dead = true
-      player.deadTimer = 80
-      spawnParticles(player.x+10, player.y, '#b0c4ff', 12)
-      updateHeartsUI()
+    g.phase+=0.05; g.x+=g.dir*g.speed;
+    if(g.x>g.startX+g.range||g.x<g.startX-g.range)g.dir*=-1;
+    g.floatY=Math.sin(g.phase)*6;
+    if(!player.dead&&powerTimer<=0&&rectOverlap(player.x,player.y,20,28,g.x-14,g.y-14+g.floatY,28,28)){
+      lives--;player.dead=true;player.deadTimer=80;spawnParticles(player.x+10,player.y,'#b0c4ff',12);updateHUD();
     }
-  })
-
-  if(cageOpen && rectOverlap(player.x, player.y, 20, 28, cage.x-16, cage.y-28, 36, 48)){
-    winTimer++
-    if(winTimer > 30){
-      won = true
-      if(level < LEVELS.length - 1){
-        showOverlay(`💕 LEVEL ${level+1} CLEAR!`, `Amazing Jerrie!\n\nKeep going to rescue Nathan!`, 'NEXT LEVEL ♥', ()=>{
-          level++; initLevel(level); gameRunning=true; won=false; winTimer=0
-        })
+  });
+  if(cageOpen&&rectOverlap(player.x,player.y,20,28,cage.x-16,cage.y-28,36,48)){
+    winTimer++;
+    if(winTimer>30){
+      won=true;
+      if(level<LEVELS.length-1){
+        showOverlay(`💕 LEVEL ${level+1} CLEAR!`,`Amazing Jerrie!\n\nKeep going to rescue Nathan!`,'NEXT LEVEL ♥',()=>{level++;initLevel(level);gameRunning=true;won=false;winTimer=0;});
       } else {
-        // FIX #5: \n\n renders correctly now via white-space: pre-line on #overlay p
-        showOverlay('🎉 YOU DID IT! 💕', '"You set me free, hooray we can snuggle now!"\n\n— Nathan 💕', 'PLAY AGAIN ♥', ()=>{
-          level=0; lives=3; initLevel(level); gameRunning=true; won=false; winTimer=0
-        })
+        showOverlay('🎉 YOU DID IT! 💕','"You set me free, hooray we can snuggle now!"\n\n— Nathan 💕','PLAY AGAIN ♥',()=>{level=0;lives=3;initLevel(level);gameRunning=true;won=false;winTimer=0;});
       }
     }
-  } else {
-    winTimer = 0
-  }
-
-  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-- })
-  particles = particles.filter(p=>p.life>0)
+  } else { winTimer=0; }
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life--;});
+  particles=particles.filter(p=>p.life>0);
 }
 
-// ---- DRAWING ----
-function drawPrincess(x, y, facing, powered){
-  ctx.save()
-  ctx.translate(x+10, y)
-  if(facing < 0) ctx.scale(-1,1)
-
-  if(powered){
-    ctx.shadowColor = '#ffe066'
-    ctx.shadowBlur = 14
-  }
-
-  ctx.fillStyle = C.princessDress
-  ctx.fillRect(-6, 12, 12, 16)
-  ctx.fillStyle = '#ff79b6'
-  ctx.fillRect(-9, 22, 18, 6)
-  ctx.fillStyle = C.princess
-  ctx.fillRect(-5, 4, 10, 12)
-  ctx.fillStyle = '#ffd6a5'
-  ctx.fillRect(-6, -8, 12, 12)
-  ctx.fillStyle = C.princessHair
-  ctx.fillRect(-7, -10, 14, 6)
-  ctx.fillRect(-8, -8, 4, 10)
-  ctx.fillStyle = C.princessCrown
-  ctx.fillRect(-5, -14, 10, 5)
-  ctx.fillRect(-7, -12, 3, 3)
-  ctx.fillRect(4, -12, 3, 3)
-  ctx.fillRect(-1, -16, 3, 4)
-  ctx.fillStyle = '#3d2000'
-  ctx.fillRect(0, -4, 2, 2)
-  ctx.fillRect(-4, -4, 2, 2)
-  ctx.fillStyle = '#c0506a'
-  ctx.fillRect(-2, 0, 5, 1)
-  ctx.fillStyle = C.princess
-  ctx.fillRect(-9, 6, 4, 8)
-  ctx.fillRect(6, 6, 4, 8)
-  ctx.fillStyle = '#f8b4d9'
-  ctx.fillRect(-4, 26, 4, 6)
-  ctx.fillRect(1, 26, 4, 6)
-
-  ctx.restore()
+function drawPrincess(x,y,facing,powered){
+  ctx.save(); ctx.translate(x+10,y);
+  if(facing<0)ctx.scale(-1,1);
+  if(powered){ctx.shadowColor='#ffe066';ctx.shadowBlur=14;}
+  ctx.fillStyle=C.princessDress; ctx.fillRect(-6,12,12,16);
+  ctx.fillStyle='#ff79b6'; ctx.fillRect(-9,22,18,6);
+  ctx.fillStyle=C.princess; ctx.fillRect(-5,4,10,12);
+  ctx.fillStyle='#ffd6a5'; ctx.fillRect(-6,-8,12,12);
+  ctx.fillStyle=C.princessHair; ctx.fillRect(-7,-10,14,6); ctx.fillRect(-8,-8,4,10);
+  ctx.fillStyle=C.princessCrown; ctx.fillRect(-5,-14,10,5); ctx.fillRect(-7,-12,3,3); ctx.fillRect(4,-12,3,3); ctx.fillRect(-1,-16,3,4);
+  ctx.fillStyle='#3d2000'; ctx.fillRect(0,-4,2,2); ctx.fillRect(-4,-4,2,2);
+  ctx.fillStyle='#c0506a'; ctx.fillRect(-2,0,5,1);
+  ctx.fillStyle=C.princess; ctx.fillRect(-9,6,4,8); ctx.fillRect(6,6,4,8);
+  ctx.fillStyle='#f8b4d9'; ctx.fillRect(-4,26,4,6); ctx.fillRect(1,26,4,6);
+  ctx.restore();
 }
 
-function drawNathan(x, y, cageOpen){
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.fillStyle = C.cage
-  ctx.fillRect(-16, -32, 36, 4)
-  ctx.fillRect(-16, 12, 36, 4)
-  for(let i=0;i<5;i++){
-    ctx.fillStyle = cageOpen ? '#aaaaaa44' : C.cageBar
-    ctx.fillRect(-14 + i*8, -28, 3, 40)
-  }
-  if(cageOpen){
-    ctx.fillStyle = '#ffe06680'
-    ctx.fillRect(-16, -32, 36, 48)
-  }
-  ctx.restore()
-
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.fillStyle = C.nathanShirt
-  ctx.fillRect(-5, -16, 10, 14)
-  ctx.fillStyle = C.nathan
-  ctx.fillRect(-6, -28, 12, 12)
-  ctx.fillStyle = C.nathanHair
-  ctx.fillRect(-6, -30, 12, 6)
-  ctx.fillStyle = '#3d2000'
-  ctx.fillRect(-3, -22, 2, 2)
-  ctx.fillRect(1, -22, 2, 2)
-  if(cageOpen){
-    ctx.fillStyle = '#c06050'
-    ctx.fillRect(-3, -17, 6, 2)
-    ctx.fillRect(-4, -18, 2, 2)
-    ctx.fillRect(2, -18, 2, 2)
-  } else {
-    ctx.fillStyle = '#a05040'
-    ctx.fillRect(-2, -16, 4, 1)
-  }
-  ctx.fillStyle = C.nathan
-  ctx.fillRect(-9, -14, 4, 8)
-  ctx.fillRect(5, -14, 4, 8)
-  ctx.fillStyle = '#2255aa'
-  ctx.fillRect(-4, -4, 4, 6)
-  ctx.fillRect(1, -4, 4, 6)
-  ctx.restore()
+function drawNathan(x,y,cageOpen){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle=C.cage; ctx.fillRect(-16,-32,36,4); ctx.fillRect(-16,12,36,4);
+  for(let i=0;i<5;i++){ctx.fillStyle=cageOpen?'#aaaaaa44':C.cageBar; ctx.fillRect(-14+i*8,-28,3,40);}
+  if(cageOpen){ctx.fillStyle='#ffe06680'; ctx.fillRect(-16,-32,36,48);}
+  ctx.restore();
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle=C.nathanShirt; ctx.fillRect(-5,-16,10,14);
+  ctx.fillStyle=C.nathan; ctx.fillRect(-6,-28,12,12);
+  ctx.fillStyle=C.nathanHair; ctx.fillRect(-6,-30,12,6);
+  ctx.fillStyle='#3d2000'; ctx.fillRect(-3,-22,2,2); ctx.fillRect(1,-22,2,2);
+  if(cageOpen){ctx.fillStyle='#c06050'; ctx.fillRect(-3,-17,6,2); ctx.fillRect(-4,-18,2,2); ctx.fillRect(2,-18,2,2);}
+  else{ctx.fillStyle='#a05040'; ctx.fillRect(-2,-16,4,1);}
+  ctx.fillStyle=C.nathan; ctx.fillRect(-9,-14,4,8); ctx.fillRect(5,-14,4,8);
+  ctx.fillStyle='#2255aa'; ctx.fillRect(-4,-4,4,6); ctx.fillRect(1,-4,4,6);
+  ctx.restore();
 }
 
 function drawGhost(g){
-  const fy = g.floatY || 0
-  ctx.save()
-  ctx.translate(g.x, g.y + fy)
-
-  const alpha = powerTimer > 0 ? 0.3 : 1
-  ctx.globalAlpha = alpha
-
-  ctx.fillStyle = C.ghost
-  ctx.beginPath()
-  ctx.arc(0, -10, 14, Math.PI, 0)
-  ctx.rect(-14, -10, 28, 20)
-  ctx.moveTo(-14, 10)
-  for(let i=0;i<4;i++){
-    ctx.quadraticCurveTo(-10+i*7, 18, -7+i*7, 10)
-  }
-  ctx.fill()
-
-  ctx.fillStyle = C.ghostEye
-  ctx.fillRect(-6, -14, 4, 5)
-  ctx.fillRect(2, -14, 4, 5)
-  ctx.fillStyle = '#4060cc'
-  ctx.fillRect(-4, -5, 8, 3)
-
-  ctx.globalAlpha = 1
-  ctx.restore()
+  const fy=g.floatY||0; ctx.save(); ctx.translate(g.x,g.y+fy);
+  ctx.globalAlpha=powerTimer>0?0.3:1;
+  ctx.fillStyle=C.ghost;
+  ctx.beginPath(); ctx.arc(0,-10,14,Math.PI,0); ctx.rect(-14,-10,28,20);
+  ctx.moveTo(-14,10);
+  for(let i=0;i<4;i++)ctx.quadraticCurveTo(-10+i*7,18,-7+i*7,10);
+  ctx.fill();
+  ctx.fillStyle=C.ghostEye; ctx.fillRect(-6,-14,4,5); ctx.fillRect(2,-14,4,5);
+  ctx.fillStyle='#4060cc'; ctx.fillRect(-4,-5,8,3);
+  ctx.globalAlpha=1; ctx.restore();
 }
 
-function drawHeart(x, y, t){
-  const bob = Math.sin(t*0.05)*3
-  ctx.save()
-  ctx.translate(x, y + bob)
-  ctx.fillStyle = C.heart
-  ctx.shadowColor = C.heartGlow
-  ctx.shadowBlur = 10
-  ctx.fillRect(-5, -3, 4, 4)
-  ctx.fillRect(1, -3, 4, 4)
-  ctx.fillRect(-6, -1, 12, 4)
-  ctx.fillRect(-5, 3, 10, 3)
-  ctx.fillRect(-3, 6, 6, 2)
-  ctx.fillRect(-1, 8, 2, 2)
-  ctx.restore()
+function drawHeart(x,y,t){
+  const bob=Math.sin(t*0.05)*3; ctx.save(); ctx.translate(x,y+bob);
+  ctx.fillStyle=C.heart; ctx.shadowColor=C.heartGlow; ctx.shadowBlur=10;
+  ctx.fillRect(-5,-3,4,4); ctx.fillRect(1,-3,4,4); ctx.fillRect(-6,-1,12,4);
+  ctx.fillRect(-5,3,10,3); ctx.fillRect(-3,6,6,2); ctx.fillRect(-1,8,2,2);
+  ctx.restore();
 }
 
-function drawTreat(x, y, t){
-  const bob = Math.sin(t*0.07+1)*3
-  ctx.save()
-  ctx.translate(x, y + bob)
-  ctx.shadowColor = '#ffe066'
-  ctx.shadowBlur = 12
-  ctx.fillStyle = '#ffe066'
-  ctx.fillRect(-10, -4, 20, 14)
-  ctx.fillStyle = '#ff9de2'
-  ctx.fillRect(-10, -8, 20, 6)
-  ctx.fillStyle = '#fff'
-  ctx.fillRect(-8, -10, 4, 4)
-  ctx.fillStyle = '#ff4d8d'
-  ctx.fillRect(-6, -12, 2, 4)
-  ctx.restore()
+function drawTreat(x,y,t){
+  const bob=Math.sin(t*0.07+1)*3; ctx.save(); ctx.translate(x,y+bob);
+  ctx.shadowColor='#ffe066'; ctx.shadowBlur=12;
+  ctx.fillStyle='#ffe066'; ctx.fillRect(-10,-4,20,14);
+  ctx.fillStyle='#ff9de2'; ctx.fillRect(-10,-8,20,6);
+  ctx.fillStyle='#fff'; ctx.fillRect(-8,-10,4,4);
+  ctx.fillStyle='#ff4d8d'; ctx.fillRect(-6,-12,2,4);
+  ctx.restore();
 }
 
 function drawPlatform(p){
-  ctx.fillStyle = C.platform
-  ctx.fillRect(p.x, p.y+2, p.w, p.h-2)
-  ctx.fillStyle = C.platformTop
-  ctx.fillRect(p.x, p.y, p.w, 4)
-  ctx.fillStyle = '#c264e880'
-  for(let i=4;i<p.w-4;i+=12){
-    ctx.fillRect(p.x+i, p.y+6, 4, 2)
-  }
+  ctx.fillStyle=C.platform; ctx.fillRect(p.x,p.y+2,p.w,p.h-2);
+  ctx.fillStyle=C.platformTop; ctx.fillRect(p.x,p.y,p.w,4);
+  ctx.fillStyle='#c264e880';
+  for(let i=4;i<p.w-4;i+=12)ctx.fillRect(p.x+i,p.y+6,4,2);
 }
 
-let tick = 0
+let tick=0;
 function draw(){
-  const L = LEVELS[level]
-  const grad = ctx.createLinearGradient(0,0,0,H)
-  grad.addColorStop(0, L.bg1)
-  grad.addColorStop(1, L.bg2)
-  ctx.fillStyle = grad
-  ctx.fillRect(0,0,W,H)
-
-  platforms.forEach(drawPlatform)
-  hearts.forEach(h=>{ if(!h.collected) drawHeart(h.x, h.y, tick) })
-  treats.forEach(t=>{ if(!t.collected) drawTreat(t.x, t.y, tick) })
-  drawNathan(cage.x, cage.y, cageOpen)
-  ghosts.forEach(drawGhost)
-
-  if(!player.dead){
-    drawPrincess(player.x, player.y, player.facing, powerTimer > 0)
-  }
-
+  const L=LEVELS[level];
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,L.bg1); grad.addColorStop(1,L.bg2);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  platforms.forEach(drawPlatform);
+  hearts.forEach(h=>{if(!h.collected)drawHeart(h.x,h.y,tick);});
+  treats.forEach(t=>{if(!t.collected)drawTreat(t.x,t.y,tick);});
+  drawNathan(cage.x,cage.y,cageOpen);
+  ghosts.forEach(drawGhost);
+  if(!player.dead)drawPrincess(player.x,player.y,player.facing,powerTimer>0);
   particles.forEach(p=>{
-    ctx.save()
-    ctx.globalAlpha = p.life/p.maxLife
-    ctx.fillStyle = p.color
-    ctx.beginPath()
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2)
-    ctx.fill()
-    ctx.restore()
-  })
-
-  if(cageOpen && !won){
-    ctx.fillStyle = '#ffe06620'
-    ctx.fillRect(0,0,W,H)
-  }
-
-  tick++
+    ctx.save(); ctx.globalAlpha=p.life/p.maxLife; ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.restore();
+  });
+  if(cageOpen&&!won){ctx.fillStyle='#ffe06620'; ctx.fillRect(0,0,W,H);}
+  tick++;
 }
 
-function loop(){
-  update()
-  draw()
-  requestAnimationFrame(loop)
-}
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
 
-// ---- OVERLAY ----
 function showOverlay(title, msg, btnText, cb){
-  const ov = document.getElementById('overlay')
-  ov.querySelector('h1').textContent = title
-  ov.querySelector('p').textContent = msg
-  const btn = ov.querySelector('button')
-  btn.textContent = btnText
-  btn.onclick = ()=>{ ov.style.display='none'; cb() }
-  ov.style.display = 'flex'
+  const ov=document.getElementById('overlay');
+  ov.querySelector('h1').textContent=title;
+  document.getElementById('ov-msg').textContent=msg;
+  const btn=ov.querySelector('button');
+  btn.textContent=btnText;
+  btn.onclick=()=>{ov.style.display='none'; cb();};
+  ov.style.display='flex';
 }
 
-document.getElementById('start-btn').onclick = ()=>{
-  document.getElementById('overlay').style.display = 'none'
-  initLevel(level)
-  gameRunning = true
-}
+document.getElementById('start-btn').onclick=()=>{
+  document.getElementById('overlay').style.display='none';
+  initLevel(level); gameRunning=true;
+};
 
-// ---- CONTROLS ----
-document.addEventListener('keydown', e=>{
-  if(e.key==='ArrowLeft'||e.key==='a') keys.left=true
-  if(e.key==='ArrowRight'||e.key==='d') keys.right=true
-  if(e.key==='ArrowUp'||e.key===' '||e.key==='w') keys.jump=true
-})
-document.addEventListener('keyup', e=>{
-  if(e.key==='ArrowLeft'||e.key==='a') keys.left=false
-  if(e.key==='ArrowRight'||e.key==='d') keys.right=false
-  if(e.key==='ArrowUp'||e.key===' '||e.key==='w') keys.jump=false
-})
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
+  if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=true;
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
+  if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=false;
+});
 
-// Touch buttons
 function holdBtn(id, key){
-  const btn = document.getElementById(id)
-  btn.addEventListener('touchstart', e=>{ e.preventDefault(); keys[key]=true }, {passive:false})
-  btn.addEventListener('touchend',   e=>{ e.preventDefault(); keys[key]=false }, {passive:false})
-  btn.addEventListener('touchcancel',e=>{ e.preventDefault(); keys[key]=false }, {passive:false})
-  btn.addEventListener('mousedown',  e=>{ e.preventDefault(); keys[key]=true })
-  btn.addEventListener('mouseup',    ()=>keys[key]=false)
-  btn.addEventListener('mouseleave', ()=>keys[key]=false)
+  const btn=document.getElementById(id);
+  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('touchcancel',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('mousedown',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');});
+  btn.addEventListener('mouseup',()=>{keys[key]=false;btn.classList.remove('pressed');});
+  btn.addEventListener('mouseleave',()=>{keys[key]=false;btn.classList.remove('pressed');});
 }
+holdBtn('btn-left','left');
+holdBtn('btn-right','right');
+holdBtn('btn-jump','jump');
 
-holdBtn('btn-left','left')
-holdBtn('btn-right','right')
-holdBtn('btn-jump','jump')
+window.addEventListener('blur',()=>{keys.left=false;keys.right=false;keys.jump=false;});
 
-window.addEventListener('blur', ()=>{ keys.left=false; keys.right=false; keys.jump=false })
+let lastTouch=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-lastTouch<300)e.preventDefault();
+  lastTouch=now;
+},{passive:false});
 
-// Prevent double-tap zoom
-let lastTouch = 0
-document.addEventListener('touchend', e=>{
-  const now = Date.now()
-  if(now - lastTouch < 300) e.preventDefault()
-  lastTouch = now
-}, {passive:false})
-
-loop()
+loop();
 </script>
 </body>
 </html>
