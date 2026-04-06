@@ -766,19 +766,30 @@ const LEVELS = [
   },
 
   {
-
-    bg1:'#0a2e1a', bg2:'#0a1a2e',
-
-    platforms:[{x:0,y:288,w:160,h:32},{x:200,y:288,w:120,h:32},{x:360,y:288,w:120,h:32},{x:64,y:224,w:80,h:16},{x:200,y:208,w:80,h:16},{x:320,y:192,w:80,h:16},{x:128,y:160,w:64,h:16},{x:280,y:144,w:64,h:16},{x:400,y:224,w:64,h:16}],
-
-    hearts:[{x:80,y:200},{x:210,y:184},{x:330,y:168},{x:145,y:136},{x:295,y:120},{x:410,y:200}],
-
-    treats:[{x:240,y:260},{x:420,y:260}],
-
-    ghosts:[{x:100,y:256,dir:1,range:100,speed:1.4},{x:220,y:256,dir:-1,range:80,speed:1.6},{x:200,y:176,dir:1,range:60,speed:1.8}],
-
-    cage:{x:430,y:240}, totalHearts:6
-
+    bg1:'#0a2e1a', bg2:'#0a1a2e', 
+    // This creates a "Zig-Zag" climb to reach Nathan at the top!
+    platforms:[
+      {x:0,y:288,w:120,h:32},   // Starting floor
+      {x:360,y:288,w:120,h:32}, // Bottom right landing
+      {x:180,y:230,w:120,h:16}, // First jump up
+      {x:20,y:180,w:100,h:16},  // Middle-left ledge
+      {x:340,y:140,w:100,h:16}, // Middle-right ledge
+      {x:140,y:90,w:120,h:16},  // Final approach
+      {x:380,y:70,w:100,h:16}   // Nathan's Balcony (The Goal!)
+    ],
+    // Hearts are now hidden on the edges of the climb
+    hearts:[
+      {x:400,y:260}, {x:230,y:200}, {x:50,y:150}, 
+      {x:370,y:110}, {x:200,y:60}, {x:440,y:40}
+    ], 
+    treats:[{x:30,y:260}], // Treat is at the bottom to help with the ground ghosts
+    ghosts:[
+      {x:230,y:256,dir:1,range:120,speed:2.2}, // Faster ground ghost
+      {x:100,y:150,dir:-1,range:60,speed:1.8}, // Ghost guarding the mid-jump
+      {x:280,y:100,dir:1,range:80,speed:2.0}   // Ghost near the top
+    ], 
+    cage:{x:430,y:70}, // Nathan is now HIGH UP in the top right corner!
+    totalHearts:6 
   },
 
   {
