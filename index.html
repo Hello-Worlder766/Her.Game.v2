@@ -758,31 +758,32 @@ const LEVELS = [
   {
 
     bg1:'#2e0a0a', bg2:'#1a0a0a',
-
+    // THE GHOST GAUNTLET: Precision jumping over the void!
     platforms:[
-      {x:0,y:288,w:120,h:32},
-      {x:140,y:288,w:120,h:32},
-      {x:280,y:288,w:200,h:32},
-    
-      {x:60,y:240,w:120,h:16},
-      {x:200,y:220,w:140,h:16},
-      {x:360,y:240,w:120,h:16},
-    
-      {x:120,y:180,w:140,h:16},
-      {x:280,y:160,w:140,h:16},
-    
-      {x:200,y:120,w:140,h:16},
-    
-      {x:320,y:80,w:120,h:16} ],// goal],
-     
-    hearts:[{x:64,y:216},{x:170,y:200},{x:265,y:184},{x:362,y:200},{x:108,y:152},{x:232,y:136},{x:360,y:136},{x:175,y:88}],
-
-    treats:[{x:310,y:64},{x:60,y:208}],
-
-    ghosts:[{x:180,y:256,dir:1,range:80,speed:1.5},{x:320,y:256,dir:-1,range:80,speed:1.7},{x:220,y:192,dir:1,range:80,speed:2.0},{x:290,y:128,dir:-1,range:80,speed:2.0}],
-
-    cage:{x:355,y:56}, totalHearts:8
-
+      {x:0, y:288, w:80, h:32},    // Starting Ledge
+      {x:120, y:240, w:60, h:16},  // Step 1
+      {x:240, y:240, w:60, h:16},  // Step 2
+      {x:360, y:240, w:60, h:16},  // Step 3
+      {x:420, y:160, w:60, h:16},  // Right wall climb
+      {x:300, y:120, w:80, h:16},  // Middle-air
+      {x:160, y:120, w:80, h:16},  // Middle-left
+      {x:20, y:80, w:100, h:16},   // High left approach
+      {x:220, y:60, w:120, h:16}   // Nathan's Balcony (The Goal!)
+    ],
+    // Hearts placed in danger zones between the floating steps
+    hearts:[
+      {x:100, y:260}, {x:210, y:260}, {x:330, y:260}, 
+      {x:450, y:200}, {x:380, y:100}, {x:240, y:100},
+      {x:50, y:60}, {x:280, y:40}
+    ], 
+    treats:[{x:440, y:140}], // Strategic cake to help with the top ghosts
+    ghosts:[
+      {x:150, y:210, dir:1, range:100, speed:2.5}, 
+      {x:300, y:180, dir:-1, range:80, speed:2.0}, 
+      {x:100, y:100, dir:1, range:150, speed:3.0} // Fast patrolling boss ghost
+    ], 
+    cage:{x:280, y:60}, 
+    totalHearts:8
   }
 
 ];
