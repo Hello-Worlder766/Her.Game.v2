@@ -217,112 +217,74 @@ canvas#game {
 /* ── CONTROL BUTTONS ─────────────────────────────── */
 
 #controls {
-
   display: flex;
-
-  gap: 10px;
-
-  margin-top: 10px;
-
+  justify-content: space-between;
+  width: 100%;
+  max-width: 420px;
+  padding: 0 20px;
+  margin-top: 16px;
   z-index: 2;
-
   position: relative;
-
   align-items: center;
-
 }
 
-
+/* Base button */
 .btn {
-
   position: relative;
-
-  background: rgba(30, 8, 50, 0.85);
-
+  background: rgba(30, 8, 50, 0.9);
   border: 2px solid var(--pink);
-
   color: var(--pink);
-
   font-family: 'Press Start 2P', monospace;
 
-  font-size: 15px;
+  /* 👇 BIGGER + easier to press */
+  width: 80px;
+  height: 70px;
+  font-size: 20px;
 
-  width: 58px;
-
-  height: 52px;
-
-  border-radius: 12px;
-
+  border-radius: 16px;
   cursor: pointer;
-
   touch-action: manipulation;
 
   transition: transform 80ms, box-shadow 80ms, background 80ms;
 
   box-shadow:
-
-    0 4px 0 var(--pink-dark),
-
-    0 0 12px var(--pink-glow);
+    0 5px 0 var(--pink-dark),
+    0 0 16px var(--pink-glow);
 
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 
-  /* pressed state prep */
-
   top: 0;
-
 }
 
-
+/* Press feedback */
 .btn:active, .btn.pressed {
-
-  transform: translateY(3px);
-
+  transform: translateY(4px);
   box-shadow:
-
-    0 1px 0 var(--pink-dark),
-
-    0 0 8px var(--pink-glow);
-
+    0 2px 0 var(--pink-dark),
+    0 0 10px var(--pink-glow);
   background: rgba(60, 15, 80, 0.95);
-
 }
 
-
-/* jump button slightly bigger + gold accent */
-
+/* 👇 Jump button = BIGGER + centered priority */
 #btn-jump {
-
-  width: 64px;
-
-  height: 58px;
+  width: 100px;
+  height: 85px;
+  font-size: 26px;
 
   border-color: var(--gold);
-
   color: var(--gold);
 
   box-shadow:
-
-    0 4px 0 #a07000,
-
-    0 0 14px #ffe06650;
-
-  font-size: 17px;
-
+    0 5px 0 #a07000,
+    0 0 18px #ffe06660;
 }
 
 #btn-jump:active, #btn-jump.pressed {
-
   box-shadow:
-
-    0 1px 0 #a07000,
-
-    0 0 8px #ffe06650;
-
+    0 2px 0 #a07000,
+    0 0 10px #ffe06660;
 }
 
 
@@ -819,6 +781,10 @@ const keys={left:false,right:false,jump:false};
 
 let player={}, ghosts=[], hearts=[], treats=[], platforms=[], cage={};
 
+/* 👇 NEW (input forgiveness) */
+let jumpBuffer = 0;
+let coyoteTime = 0;
+
 
 function initLevel(lvl){
 
@@ -923,44 +889,57 @@ function update(){
   if(dx>0) player.facing=1;
 
   if(dx<0) player.facing=-1;
-
-  if(keys.jump&&player.onGround&&!player.jumpPressed){player.vy=JUMP_FORCE;player.jumpPressed=true;player.onGround=false;}
-
-  if(!keys.jump) player.jumpPressed=false;
+ /* 👇 Jump buffer */
+if(keys.jump){
+  jumpBuffer = 8; // frames of forgiveness
+}
 
   player.vy+=GRAVITY; player.x+=player.vx; player.y+=player.vy; player.onGround=false;
 
   platforms.forEach(p=>{
-
-    if(rectOverlap(player.x,player.y,20,28,p.x,p.y,p.w,p.h)){
-
-      if(player.vy>=0&&player.y+28-player.vy<=p.y+2){player.y=p.y-28;player.vy=0;player.onGround=true;}
-
-      else if(player.vy<0&&player.y-player.vy>=p.y+p.h-2){player.y=p.y+p.h;player.vy=0;}
-
-      else{if(player.vx>0)player.x=p.x-20;if(player.vx<0)player.x=p.x+p.w;}
-
+  if(rectOverlap(player.x,player.y,20,28,p.x,p.y,p.w,p.h)){
+    if(player.vy>=0 && player.y+28-player.vy<=p.y+2){
+      player.y = p.y - 28;
+      player.vy = 0;
+      player.onGround = true;
     }
-
-  });
-
+    else if(player.vy<0 && player.y-player.vy>=p.y+p.h-2){
+      player.y = p.y + p.h;
+      player.vy = 0;
+    }
+    else{
+      if(player.vx>0) player.x = p.x - 20;
+      if(player.vx<0) player.x = p.x + p.w;
+    }
+  }
+});
+    if(player.onGround){
+      coyoteTime = 6;
+    } else {
+      coyoteTime--;
+    }
+  
+    if(jumpBuffer > 0 && coyoteTime > 0){
+       player.vy = JUMP_FORCE;
+       player.onGround = false;
+       jumpBuffer = 0;
+     }
+  if(jumpBuffer > 0) jumpBuffer--;
   if(player.x<0)player.x=0; if(player.x>W-20)player.x=W-20;
 
   if(player.y>H+40&&!player.dead){lives--;player.dead=true;player.deadTimer=60;spawnParticles(player.x+10,H,'#ff69b4',12);}
 
-  hearts.forEach(h=>{
+hearts.forEach(h=>{
+  if(!h.collected && rectOverlap(player.x,player.y,20,28,h.x-10,h.y-10,20,20)){
+    h.collected = true;
+    heartsCollected++;
+    spawnParticles(h.x,h.y,'#ff4d8d',10);
 
-    if(!h.collected&&rectOverlap(player.x,player.y,20,28,h.x-10,h.y-10,20,20)){
+    if(heartsCollected >= LEVELS[level].totalHearts) cageOpen = true;
 
-      h.collected=true;heartsCollected++;spawnParticles(h.x,h.y,'#ff4d8d',10);
-
-      if(heartsCollected>=LEVELS[level].totalHearts)cageOpen=true;
-
-      updateHUD();
-
-    }
-
-  });
+    updateHUD();
+  }
+});
 
   treats.forEach(t=>{
 
