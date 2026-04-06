@@ -29,6 +29,8 @@ body {
   user-select: none;
 }
 
+#stars-bg { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
+
 #ui {
   position: relative;
   z-index: 2;
@@ -41,11 +43,12 @@ body {
 
 .hud-pill {
   background: rgba(255,105,180,0.15);
-  border: 1px solid var(--pink);
-  border-radius: 15px;
-  padding: 6px 10px;
+  border: 1.5px solid var(--pink);
+  border-radius: 20px;
+  padding: 6px 12px;
   color: var(--text-soft);
-  font-size: 8px;
+  font-size: 7px;
+  backdrop-filter: blur(4px);
 }
 
 canvas#game {
@@ -55,40 +58,47 @@ canvas#game {
   image-rendering: pixelated;
   max-width: 95vw;
   border-radius: 8px;
-  box-shadow: 0 0 20px var(--pink-glow);
+  box-shadow: 0 0 30px var(--pink-glow);
+  position: relative;
+  z-index: 2;
 }
 
 #controls {
   display: flex;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 15px;
+  margin-top: 15px;
+  z-index: 2;
 }
 
 .btn {
   background: #2d0a4e;
   border: 2px solid var(--pink);
   color: var(--pink);
-  width: 70px;
-  height: 60px;
+  width: 65px;
+  height: 55px;
   border-radius: 12px;
-  font-size: 24px;
+  font-size: 20px;
   box-shadow: 0 5px 0 var(--pink-dark);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  top: 0;
 }
 
-.btn:active, .btn.pressed {
+.btn.pressed {
   top: 3px;
-  box-shadow: 0 2px 0 var(--pink-dark);
+  box-shadow: 0 1px 0 var(--pink-dark);
+  background: #3d1a5e;
 }
+
+#btn-jump { border-color: var(--gold); color: var(--gold); box-shadow: 0 5px 0 #a07000; }
 
 #overlay {
   position: fixed;
   inset: 0;
-  background: rgba(26, 10, 46, 0.95);
+  background: rgba(26, 10, 46, 0.97);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -97,22 +107,24 @@ canvas#game {
   text-align: center;
 }
 
-#overlay h1 { color: var(--pink); font-size: 18px; margin-bottom: 20px; }
-#overlay p { color: var(--text-soft); font-size: 10px; line-height: 2; max-width: 80%; margin-bottom: 30px; }
+#overlay h1 { color: var(--pink); font-size: 16px; margin-bottom: 20px; text-shadow: 0 0 10px var(--pink); }
+#overlay p { color: var(--text-soft); font-size: 8px; line-height: 2.2; max-width: 80%; margin-bottom: 30px; }
 
 #start-btn {
   background: var(--pink-deep);
   border: none;
   color: white;
-  padding: 15px 40px;
+  padding: 18px 35px;
   font-family: 'Press Start 2P';
   border-radius: 10px;
-  box-shadow: 0 5px 0 var(--pink-dark);
+  box-shadow: 0 6px 0 var(--pink-dark);
   cursor: pointer;
 }
 </style>
 </head>
 <body>
+
+<canvas id="stars-bg"></canvas>
 
 <div id="ui">
   <div class="hud-pill" id="level-ui">LEVEL 1</div>
@@ -129,9 +141,9 @@ canvas#game {
 </div>
 
 <div id="overlay">
-  <h1>💕 Rescue Nathan! 💕</h1>
-  <p>Jerrie! You must climb the spooky towers to save Nathan. Collect all the hearts to open his cage!<br><br>Watch out for ghosts!</p>
-  <button id="start-btn">START GAME ♥</button>
+  <h1 id="ov-title">💕 Rescue Nathan! 💕</h1>
+  <p id="ov-msg">Jerrie! Nathan's been taken by the ghosts!<br><br>Collect all the hearts to unlock his cage and save him. JUMP to reach high places!</p>
+  <button id="start-btn">START ♥</button>
 </div>
 
 <script>
@@ -149,7 +161,7 @@ const LEVELS = [
     cage:{x:420,y:240}, total:5
   },
   {
-    bg: '#4a1033', // LEVEL 2: Vertical Challenge
+    bg: '#4a1033', // LEVEL 2: The Vertical Climb
     platforms:[
       {x:0,y:288,w:120,h:32}, {x:360,y:288,w:120,h:32},
       {x:180,y:230,w:100,h:16}, {x:40,y:170,w:80,h:16},
@@ -166,12 +178,10 @@ let player, ghosts, hearts, platforms, cage, cageOpen=false, keys={left:false,ri
 
 function initLevel(idx) {
   const L = LEVELS[idx];
-  level = idx;
-  heartsCollected = 0;
-  cageOpen = false;
+  level = idx; heartsCollected = 0; cageOpen = false;
   platforms = L.platforms;
   hearts = L.hearts.map(h => ({...h, collected: false}));
-  ghosts = L.ghosts.map(g => ({...g, x:g.x, startX:g.x, dir:1, phase:0}));
+  ghosts = L.ghosts.map(g => ({...g, x:g.x, startX:g.x, dir:1, phase:Math.random()*Math.PI*2}));
   cage = {...L.cage};
   player = {x:40, y:200, vx:0, vy:0, onGround:false, facing:1, dead:false, timer:0};
   updateHUD();
@@ -184,18 +194,17 @@ function updateHUD() {
 }
 
 function update() {
-  if(!gameRunning || player.dead) {
-    if(player.dead) {
-      player.timer++;
-      if(player.timer > 50) {
-        if(lives <= 0) { level=0; lives=3; }
-        initLevel(level);
-      }
+  if(!gameRunning) return;
+  if(player.dead) {
+    player.timer++;
+    if(player.timer > 50) {
+      if(lives <= 0) { level=0; lives=3; showOverlay("OH NO!", "Nathan's still stuck! Try again Jerrie!", "RETRY ♥"); }
+      else { initLevel(level); }
     }
     return;
   }
 
-  // Input + Movement
+  // Smooth Movement Handling
   player.vx = 0;
   if(keys.left) { player.vx = -SPEED; player.facing = -1; }
   if(keys.right) { player.vx = SPEED; player.facing = 1; }
@@ -205,107 +214,115 @@ function update() {
   player.x += player.vx;
   player.y += player.vy;
 
-  // Collisions
+  // Better Collisions
+  let wasOnGround = player.onGround;
   player.onGround = false;
   platforms.forEach(p => {
     if(player.x < p.x + p.w && player.x + 20 > p.x && player.y < p.y + p.h && player.y + 28 > p.y) {
       if(player.vy > 0 && player.y < p.y + 10) {
         player.y = p.y - 28; player.vy = 0; player.onGround = true;
-      } else if(player.vx > 0) { player.x = p.x - 20; 
-      } else if(player.vx < 0) { player.x = p.x + p.w; }
+      } else if(player.vx > 0 && player.y > p.y) { player.x = p.x - 20; 
+      } else if(player.vx < 0 && player.y > p.y) { player.x = p.x + p.w; }
     }
   });
 
   if(player.y > H + 50) { player.dead = true; lives--; updateHUD(); }
   if(player.x < 0) player.x = 0; if(player.x > W-20) player.x = W-20;
 
-  // Hearts
+  // Collection
   hearts.forEach(h => {
-    if(!h.collected && Math.hypot(player.x+10-h.x, player.y+14-h.y) < 20) {
+    if(!h.collected && Math.hypot(player.x+10-h.x, player.y+14-h.y) < 25) {
       h.collected = true; heartsCollected++; updateHUD();
       if(heartsCollected >= LEVELS[level].total) cageOpen = true;
     }
   });
 
-  // Ghosts
+  // Ghost Logic
   ghosts.forEach(g => {
     g.x += g.dir * g.speed;
     if(Math.abs(g.x - g.startX) > g.range) g.dir *= -1;
-    g.phase += 0.1;
-    const gy = 0 + Math.sin(g.phase) * 10;
-    if(Math.hypot(player.x+10-g.x, player.y+14-(200+gy)) < 20) { // Simplified check
-       // Check against real ghost pos
-    }
-  });
-  
-  // Real Ghost Collision check
-  ghosts.forEach(g => {
-    let gy = (level === 0 ? 256 : g.startX > 200 ? 250 : 120); // Mapping Y based on Level design
-    if(rectOverlap(player.x, player.y, 20, 28, g.x-10, gy-10, 20, 20)) {
-        player.dead = true; lives--; updateHUD();
+    g.phase += 0.08;
+    const gyOffset = Math.sin(g.phase) * 12;
+    // Base Y for ghosts per level
+    let baseY = (level === 0) ? 256 : (g.startX > 200 ? 250 : 120);
+    if(!player.dead && Math.hypot(player.x+10-g.x, player.y+14-(baseY+gyOffset)) < 22) {
+      player.dead = true; lives--; updateHUD();
     }
   });
 
-  // Cage / Win
-  if(cageOpen && rectOverlap(player.x, player.y, 20, 28, cage.x-15, cage.y-30, 30, 40)) {
+  // Cage Check
+  if(cageOpen && Math.hypot(player.x+10-cage.x, player.y+14-cage.y) < 30) {
     if(level < LEVELS.length - 1) {
       level++; initLevel(level);
     } else {
       gameRunning = false;
-      document.getElementById('overlay').style.display = 'flex';
-      document.getElementById('ov-title').innerText = "🎉 YOU WON! 💕";
-      document.getElementById('ov-msg').innerText = "Nathan is free! He gives Jerrie a big hug!";
+      showOverlay("🎉 YOU DID IT! 💕", "Nathan is free! Jerrie saved the day!", "PLAY AGAIN ♥");
     }
   }
 }
 
-function rectOverlap(ax,ay,aw,ah,bx,by,bw,bh){
-  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
+function drawPrincess(x, y, facing) {
+  ctx.save(); ctx.translate(x+10, y); if(facing < 0) ctx.scale(-1, 1);
+  ctx.fillStyle = '#ff4da6'; ctx.fillRect(-8, 12, 16, 16); // Dress
+  ctx.fillStyle = '#ffd6a5'; ctx.fillRect(-6, 0, 12, 12);  // Face
+  ctx.fillStyle = '#4a2800'; ctx.fillRect(-7, -2, 14, 5);  // Hair
+  ctx.fillStyle = '#ffe066'; ctx.fillRect(-4, -5, 8, 3);   // Crown
+  ctx.restore();
+}
+
+function drawNathan(x, y, open) {
+  ctx.fillStyle = '#888'; ctx.fillRect(x-15, y-30, 30, 40); // Cage
+  if(!open) { ctx.fillStyle = '#444'; for(let i=0; i<4; i++) ctx.fillRect(x-12+i*8, y-30, 2, 40); }
+  ctx.fillStyle = '#ffd6a5'; ctx.fillRect(x-6, y-22, 12, 12); // Nathan's face
+  ctx.fillStyle = '#4a90d9'; ctx.fillRect(x-6, y-10, 12, 10); // Shirt
 }
 
 function draw() {
-  ctx.fillStyle = LEVELS[level].bg;
-  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = LEVELS[level].bg; ctx.fillRect(0,0,W,H);
 
   platforms.forEach(p => {
-    ctx.fillStyle = '#5c2d8a'; ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = '#5c2d8a'; ctx.fillRect(p.x, p.y+4, p.w, p.h-4);
     ctx.fillStyle = '#a855d4'; ctx.fillRect(p.x, p.y, p.w, 4);
   });
 
   hearts.forEach(h => {
-    if(!h.collected) { ctx.fillStyle = '#ff4d8d'; ctx.fillRect(h.x-6, h.y-6, 12, 12); }
+    if(!h.collected) {
+      ctx.fillStyle = '#ff4d8d'; 
+      ctx.beginPath(); ctx.arc(h.x, h.y, 6, 0, Math.PI*2); ctx.fill();
+    }
   });
-
-  // Draw Cage/Nathan
-  ctx.fillStyle = '#888'; ctx.fillRect(cage.x-15, cage.y-30, 30, 40);
-  if(!cageOpen) { ctx.fillStyle = '#444'; for(let i=0; i<4; i++) ctx.fillRect(cage.x-12+i*8, cage.y-30, 2, 40); }
-  // Nathan's face
-  ctx.fillStyle = '#ffd6a5'; ctx.fillRect(cage.x-6, cage.y-22, 12, 12);
 
   ghosts.forEach(g => {
-    let gy = (level === 0 ? 256 : g.startX > 200 ? 250 : 120);
-    ctx.fillStyle = '#b0c4ff'; ctx.fillRect(g.x-12, gy-12, 24, 24);
+    let baseY = (level === 0) ? 256 : (g.startX > 200 ? 250 : 120);
+    ctx.fillStyle = '#b0c4ff'; ctx.beginPath();
+    ctx.arc(g.x, baseY + Math.sin(g.phase)*12, 12, 0, Math.PI*2); ctx.fill();
   });
 
-  if(!player.dead) {
-    ctx.fillStyle = '#ff4da6'; ctx.fillRect(player.x, player.y+10, 20, 18);
-    ctx.fillStyle = '#ffd6a5'; ctx.fillRect(player.x+4, player.y, 12, 12);
-  }
+  drawNathan(cage.x, cage.y, cageOpen);
+  if(!player.dead) drawPrincess(player.x, player.y, player.facing);
 }
 
 function loop() { update(); draw(); requestAnimationFrame(loop); }
 
+function showOverlay(t, m, b) {
+  document.getElementById('ov-title').innerText = t;
+  document.getElementById('ov-msg').innerText = m;
+  document.getElementById('start-btn').innerText = b;
+  document.getElementById('overlay').style.display = 'flex';
+  gameRunning = false;
+}
+
 document.getElementById('start-btn').onclick = () => {
   document.getElementById('overlay').style.display = 'none';
-  initLevel(0);
+  if(lives <= 0 || !player) initLevel(0);
   gameRunning = true;
 };
 
 // Controls
-const handleKey = (e, val) => {
-  if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = val;
-  if(e.key === 'ArrowRight' || e.key === 'd') keys.right = val;
-  if(e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') keys.jump = val;
+const handleKey = (e, v) => {
+  if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = v;
+  if(e.key === 'ArrowRight' || e.key === 'd') keys.right = v;
+  if(e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') keys.jump = v;
 };
 document.addEventListener('keydown', e => handleKey(e, true));
 document.addEventListener('keyup', e => handleKey(e, false));
@@ -319,6 +336,16 @@ function bind(id, k) {
 }
 bind('btn-left', 'left'); bind('btn-right', 'right'); bind('btn-jump', 'jump');
 
+// BG Stars
+const sCan = document.getElementById('stars-bg'); const sCtx = sCan.getContext('2d');
+sCan.width = window.innerWidth; sCan.height = window.innerHeight;
+const stars = Array.from({length:60}, () => ({x:Math.random()*sCan.width, y:Math.random()*sCan.height, s:Math.random()*2}));
+function drawS() { 
+  sCtx.clearRect(0,0,sCan.width,sCan.height); sCtx.fillStyle="#fff"; 
+  stars.forEach(s=>sCtx.fillRect(s.x, s.y, s.s, s.s)); requestAnimationFrame(drawS); 
+}
+drawS();
+initLevel(0); // Setup first level data immediately
 loop();
 </script>
 </body>
