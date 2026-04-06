@@ -1241,21 +1241,41 @@ document.addEventListener('keyup',e=>{
 
 
 function holdBtn(id, key){
+  const btn = document.getElementById(id);
 
-  const btn=document.getElementById(id);
+  btn.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    keys[key] = true;
+    btn.classList.add('pressed');
+  }, {passive:false});
 
-  btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');},{passive:false});
+  btn.addEventListener('touchend', e=>{
+    e.preventDefault();
+    keys[key] = false;
+    btn.classList.remove('pressed');
+  }, {passive:false});
 
-  btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('touchcancel', e=>{
+    e.preventDefault();
+    keys[key] = false;
+    btn.classList.remove('pressed');
+  }, {passive:false});
 
-  btn.addEventListener('touchcancel',e=>{e.preventDefault();keys[key]=false;btn.classList.remove('pressed');},{passive:false});
+  btn.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    keys[key] = true;
+    btn.classList.add('pressed');
+  });
 
-  btn.addEventListener('mousedown',e=>{e.preventDefault();keys[key]=true;btn.classList.add('pressed');});
+  btn.addEventListener('mouseup', ()=>{
+    keys[key] = false;
+    btn.classList.remove('pressed');
+  });
 
-  btn.addEventListener('mouseup',()=>{keys[key]=false;btn.classList.remove('pressed');});
-
-  btn.addEventListener('mouseleave',()=>{keys[key]=false;btn.classList.remove('pressed');});
-
+  btn.addEventListener('mouseleave', ()=>{
+    keys[key] = false;
+    btn.classList.remove('pressed');
+  });
 }
 
 holdBtn('btn-left','left');
