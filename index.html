@@ -28,6 +28,450 @@ body {
   font-family: 'Press Start 2P', monospace;
   overflow: hidden;
   user-select: none;
+}
+
+/* ── HUD BAR ─────────────────────────────────────── */
+#ui {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 480px;
+  max-width: 95vw;
+  padding: 6px 2px;
+  gap: 6px;
+}
+
+.hud-pill {
+  background: rgba(255,105,180,0.10);
+  border: 1.5px solid rgba(255,105,180,0.35);
+  border-radius: 20px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(4px);
+}
+
+.hud-pill span {
+  color: var(--text-soft);
+  font-size: 6.5px;
+  letter-spacing: 0.5px;
+}
+
+#hearts-ui { color: var(--pink-deep) !important; text-shadow: 0 0 8px var(--pink-glow); }
+#lives-ui { color: var(--gold) !important; }
+#level-ui { color: #c8a0ff !important; }
+
+/* ── CANVAS ──────────────────────────────────────── */
+canvas#game {
+  display: block;
+  border: 2px solid rgba(255,105,180,0.6);
+  background: #000;
+  image-rendering: pixelated;
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+  max-width: 95vw;
+  border-radius: 4px;
+}
+
+#power-indicator {
+  position: relative;
+  z-index: 2;
+  height: 20px;
+  margin-top: 5px;
+}
+
+#power-indicator span {
+  background: rgba(255, 224, 102, 0.2);
+  border: 1px solid #ffe066;
+  border-radius: 10px;
+  padding: 2px 8px;
+  color: var(--gold);
+  font-size: 6px;
+}
+
+/* ── CONTROLS ────────────────────────────────────── */
+#controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  z-index: 2;
+}
+
+.btn {
+  background: rgba(30, 8, 50, 0.85);
+  border: 2px solid var(--pink);
+  color: var(--pink);
+  font-size: 20px;
+  width: 65px;
+  height: 55px;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 4px 0 var(--pink-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  top: 0;
+}
+
+.btn.pressed {
+  top: 3px;
+  box-shadow: 0 1px 0 var(--pink-dark);
+  background: rgba(60, 15, 80, 0.95);
+}
+
+#btn-jump { border-color: var(--gold); color: var(--gold); box-shadow: 0 4px 0 #a07000; }
+#btn-jump.pressed { box-shadow: 0 1px 0 #a07000; }
+
+/* ── OVERLAY ─────────────────────────────────────── */
+#overlay {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(20, 6, 40, 0.96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  text-align: center;
+  padding: 20px;
+}
+
+#overlay h1 { color: var(--pink); font-size: 16px; margin-bottom: 20px; }
+#overlay p { color: var(--text-soft); font-size: 8px; line-height: 2; margin-bottom: 20px; }
+#overlay button {
+  background: var(--pink-deep);
+  border: none;
+  color: white;
+  font-family: 'Press Start 2P';
+  padding: 15px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--pink-dark);
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars-bg" style="position:fixed;top:0;left:0;z-index:0;"></canvas>
+
+<div id="ui">
+  <div class="hud-pill"><span id="level-ui">LEVEL 1</span></div>
+  <div class="hud-pill"><span id="hearts-ui">♥ 0/5</span></div>
+  <div class="hud-pill"><span id="lives-ui">LIVES: 3</span></div>
+</div>
+
+<canvas id="game" width="480" height="320"></canvas>
+<div id="power-indicator"></div>
+
+<div id="controls">
+    <button class="btn" id="btn-left">◀</button>
+    <button class="btn" id="btn-jump">▲</button>
+    <button class="btn" id="btn-right">▶</button>
+</div>
+
+<div id="overlay">
+  <h1 id="ov-title">💕 Rescue Nathan! 💕</h1>
+  <p id="ov-msg">Nathan's in trouble! Climb the platforms, avoid ghosts, and collect all the hearts to unlock his cage!</p>
+  <button id="start-btn">START ♥</button>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 480, H = 320;
+const GRAVITY = 0.5, JUMP_FORCE = -10.5, SPEED = 3.8;
+
+// Colors
+const C = {
+  sky1:'#2d0a4e', princess:'#ffd6a5', princessDress:'#ff4da6',
+  nathanShirt:'#4a90d9', ghost:'#b0c4ff', heart:'#ff4d8d'
+};
+
+const LEVELS = [
+  {
+    bg1:'#2d0a4e', bg2:'#1a0a2e',
+    platforms:[{x:0,y:288,w:480,h:32},{x:80,y:224,w:96,h:16},{x:240,y:192,w:96,h:16},{x:360,y:240,w:80,h:16},{x:150,y:160,w:64,h:16}],
+    hearts:[{x:100,y:200},{x:260,y:168},{x:375,y:216},{x:170,y:136},{x:420,y:200}],
+    treats:[{x:310,y:160}],
+    ghosts:[{x:200,y:256,dir:1,range:120,speed:1.2}],
+    cage:{x:420,y:240}, totalHearts:5
+  },
+  {
+    // REDESIGNED LEVEL 2: The "Zig-Zag" Ascent
+    bg1:'#4a1033', bg2:'#1a0510',
+    platforms:[
+        {x:0,y:288,w:120,h:32},   // Start
+        {x:360,y:288,w:120,h:32}, // Bottom Right pit gap
+        {x:180,y:230,w:100,h:16}, // Mid Low
+        {x:40,y:170,w:80,h:16},   // Mid Left
+        {x:320,y:140,w:80,h:16},  // Mid Right
+        {x:140,y:90,w:120,h:16},  // Top Mid
+        {x:380,y:70,w:80,h:16}    // Goal Area
+    ],
+    hearts:[
+        {x:400,y:260},{x:230,y:200},{x:60,y:140},
+        {x:350,y:110},{x:200,y:60},{x:420,y:40}
+    ],
+    treats:[{x:30,y:260}],
+    ghosts:[
+        {x:230,y:250,dir:1,range:100,speed:2.5}, 
+        {x:150,y:120,dir:1,range:150,speed:1.8},
+    ],
+    cage:{x:410,y:25}, totalHearts:6
+  },
+  {
+    bg1:'#1a0a0a', bg2:'#000',
+    platforms:[{x:0,y:288,w:100,h:32},{x:150,y:250,w:100,h:16},{x:300,y:210,w:100,h:16},{x:150,y:170,w:100,h:16},{x:0,y:130,w:100,h:16},{x:200,y:90,w:200,h:16}],
+    hearts:[{x:20,y:100},{x:200,y:220},{x:350,y:180},{x:180,y:140},{x:40,y:260},{x:420,y:260}],
+    treats:[{x:420,y:60}],
+    ghosts:[{x:200,y:250,dir:1,range:150,speed:3}],
+    cage:{x:300,y:45}, totalHearts:6
+  }
+];
+
+let level=0, heartsCollected=0, lives=3, gameRunning=false, won=false;
+let powerTimer=0, particles=[], cageOpen=false;
+const keys={left:false,right:false,jump:false};
+let player={}, ghosts=[], hearts=[], treats=[], platforms=[], cage={};
+
+function initLevel(lvl){
+  const L=LEVELS[lvl];
+  heartsCollected=0; cageOpen=false; powerTimer=0; particles=[];
+  platforms=JSON.parse(JSON.stringify(L.platforms));
+  hearts=JSON.parse(JSON.stringify(L.hearts)).map(h=>({...h,collected:false}));
+  treats=JSON.parse(JSON.stringify(L.treats)).map(t=>({...t,collected:false}));
+  ghosts=JSON.parse(JSON.stringify(L.ghosts)).map(g=>({...g,startX:g.x,vy:0,phase:Math.random()*Math.PI*2}));
+  cage={...L.cage};
+  player={x:40,y:220,vx:0,vy:0,onGround:false,facing:1,dead:false,deadTimer:0, coyote:0};
+  updateHUD();
+}
+
+function updateHUD(){
+  document.getElementById('hearts-ui').textContent=`♥ ${heartsCollected}/${LEVELS[level].totalHearts}`;
+  document.getElementById('level-ui').textContent=`LEVEL ${level+1}`;
+  document.getElementById('lives-ui').textContent=`LIVES: ${lives}`;
+  const pi=document.getElementById('power-indicator');
+  pi.innerHTML = powerTimer > 0 ? `<span>🍰 SWEET POWER! ${Math.ceil(powerTimer/60)}s</span>` : '';
+}
+
+function rectOverlap(ax,ay,aw,ah,bx,by,bw,bh){
+  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
+}
+
+function spawnParticles(x,y,color,n=8){
+  for(let i=0;i<n;i++){
+    const angle=(Math.PI*2/n)*i;
+    particles.push({x,y,vx:Math.cos(angle)*3,vy:Math.sin(angle)*3,life:40,color,r:3});
+  }
+}
+
+function update(){
+  if(!gameRunning||won) return;
+  if(player.dead){
+    player.deadTimer--;
+    if(player.deadTimer<=0){
+      if(lives<=0){
+        showOverlay('💀 OH NO!','Try again!','RESTART',()=>{lives=3; level=0; initLevel(0); gameRunning=true;});
+      } else { initLevel(level); }
+    }
+    return;
+  }
+
+  // Horizontal Input
+  player.vx = 0;
+  if(keys.left) { player.vx = -SPEED; player.facing = -1; }
+  if(keys.right) { player.vx = SPEED; player.facing = 1; }
+
+  // Jump Logic (Improved Diagonal support)
+  if(player.onGround) player.coyote = 6; // 6 frames of "grace" to jump
+  if(player.coyote > 0 && keys.jump){
+    player.vy = JUMP_FORCE;
+    player.onGround = false;
+    player.coyote = 0;
+  }
+  if(player.coyote > 0) player.coyote--;
+
+  // Apply Physics
+  player.vy += GRAVITY;
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Collision
+  let groundedThisFrame = false;
+  platforms.forEach(p=>{
+    if(rectOverlap(player.x,player.y,20,28,p.x,p.y,p.w,p.h)){
+      // Vertical correction
+      if(player.vy > 0 && player.y < p.y + 10){
+        player.y = p.y - 28;
+        player.vy = 0;
+        groundedThisFrame = true;
+      } 
+      // Horizontal nudge
+      else if(player.vx > 0) player.x = p.x - 20;
+      else if(player.vx < 0) player.x = p.x + p.w;
+    }
+  });
+  player.onGround = groundedThisFrame;
+
+  if(player.x<0)player.x=0; if(player.x>W-20)player.x=W-20;
+  if(player.y>H+40){lives--;player.dead=true;player.deadTimer=40;}
+
+  // Collectibles
+  hearts.forEach(h=>{
+    if(!h.collected && rectOverlap(player.x,player.y,20,28,h.x-10,h.y-10,20,20)){
+      h.collected=true; heartsCollected++; spawnParticles(h.x,h.y,C.heart);
+      if(heartsCollected>=LEVELS[level].totalHearts) cageOpen=true;
+      updateHUD();
+    }
+  });
+
+  treats.forEach(t=>{
+    if(!t.collected && rectOverlap(player.x,player.y,20,28,t.x-10,t.y-10,20,20)){
+      t.collected=true; powerTimer=300; updateHUD();
+    }
+  });
+  if(powerTimer>0) powerTimer--;
+
+  // Ghosts
+  ghosts.forEach(g=>{
+    g.phase+=0.05; g.x+=g.dir*g.speed;
+    if(g.x>g.startX+g.range||g.x<g.startX-g.range)g.dir*=-1;
+    const gy = g.y + Math.sin(g.phase)*8;
+    if(!player.dead && powerTimer<=0 && rectOverlap(player.x,player.y,20,28,g.x-10,gy-10,20,20)){
+      lives--; player.dead=true; player.deadTimer=50; updateHUD();
+    }
+  });
+
+  // Goal
+  if(cageOpen && rectOverlap(player.x,player.y,20,28,cage.x-15,cage.y-30,30,40)){
+    won=true;
+    if(level < LEVELS.length-1){
+      showOverlay('💕 NICE JOB!','Level complete! Ready for more?','NEXT LEVEL',()=>{level++; initLevel(level); won=false;});
+    } else {
+      showOverlay('🎉 NATHAN IS SAFE! 💕','Jerrie saved him!','PLAY AGAIN',()=>{level=0; lives=3; initLevel(0); won=false;});
+    }
+  }
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;});
+  particles=particles.filter(p=>p.life>0);
+}
+
+function draw(){
+  const L=LEVELS[level];
+  ctx.fillStyle=L.bg2; ctx.fillRect(0,0,W,H);
+  
+  platforms.forEach(p=>{
+    ctx.fillStyle='#5c2d8a'; ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.fillStyle='#a855d4'; ctx.fillRect(p.x,p.y,p.w,4);
+  });
+
+  hearts.forEach(h=>{ if(!h.collected){ctx.fillStyle=C.heart; ctx.fillRect(h.x-6,h.y-6,12,12); }});
+  treats.forEach(t=>{ if(!t.collected){ctx.fillStyle='#ffe066'; ctx.fillRect(t.x-8,t.y-8,16,16); }});
+
+  // Draw Nathan in Cage
+  ctx.fillStyle='#888'; ctx.fillRect(cage.x-15, cage.y-30, 30, 40);
+  if(!cageOpen) { ctx.fillStyle='#333'; for(let i=0;i<4;i++) ctx.fillRect(cage.x-12+i*8, cage.y-30, 2, 40); }
+
+  ghosts.forEach(g=>{
+    ctx.fillStyle=C.ghost; ctx.globalAlpha = powerTimer > 0 ? 0.3 : 1;
+    ctx.fillRect(g.x-10, g.y + Math.sin(g.phase)*8 - 10, 20, 20);
+    ctx.globalAlpha = 1;
+  });
+
+  if(!player.dead){
+    ctx.fillStyle=C.princessDress; ctx.fillRect(player.x, player.y, 20, 28);
+    ctx.fillStyle=C.princess; ctx.fillRect(player.x+4, player.y+4, 12, 10);
+  }
+
+  particles.forEach(p=>{ ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.r,p.r); });
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+
+function showOverlay(title, msg, btnText, cb){
+  const ov=document.getElementById('overlay');
+  document.getElementById('ov-title').textContent=title;
+  document.getElementById('ov-msg').textContent=msg;
+  const btn=ov.querySelector('button');
+  btn.textContent=btnText;
+  btn.onclick=()=>{ov.style.display='none'; cb();};
+  ov.style.display='flex';
+}
+
+document.getElementById('start-btn').onclick=()=>{
+  document.getElementById('overlay').style.display='none';
+  initLevel(level); gameRunning=true;
+};
+
+// Input Handling
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
+  if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=true;
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
+  if(e.key==='ArrowUp'||e.key===' '||e.key==='w')keys.jump=false;
+});
+
+function setupBtn(id, key){
+  const b=document.getElementById(id);
+  const start=(e)=>{e.preventDefault(); keys[key]=true; b.classList.add('pressed');};
+  const end=(e)=>{e.preventDefault(); keys[key]=false; b.classList.remove('pressed');};
+  b.addEventListener('touchstart', start); b.addEventListener('touchend', end);
+  b.addEventListener('mousedown', start); b.addEventListener('mouseup', end);
+}
+setupBtn('btn-left','left'); setupBtn('btn-right','right'); setupBtn('btn-jump','jump');
+
+// BG Stars
+const sc=document.getElementById('stars-bg'); const sctx=sc.getContext('2d');
+sc.width=window.innerWidth; sc.height=window.innerHeight;
+const stars=Array.from({length:50},()=>({x:Math.random()*sc.width,y:Math.random()*sc.height,s:Math.random()*2}));
+function drawStars(){
+  sctx.clearRect(0,0,sc.width,sc.height); sctx.fillStyle='#fff';
+  stars.forEach(s=>sctx.fillRect(s.x,s.y,s.s,s.s)); requestAnimationFrame(drawStars);
+}
+drawStars();
+loop();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Rescue Nathan! 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pink: #ff69b4;
+  --pink-dark: #c0396a;
+  --pink-glow: #ff69b460;
+  --pink-deep: #ff4d8d;
+  --gold: #ffe066;
+  --purple: #9b59b6;
+  --bg: #1a0a2e;
+  --text-soft: #ffb3d9;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+  user-select: none;
   -webkit-user-select: none;
 }
 
