@@ -1209,8 +1209,7 @@ function showOverlay(title, msg, btnText, cb){
 }
 
 
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('start-btn').addEventListener('touchstart', startGame);
+document.getElementById('start-btn').onclick = startGame;
 
 function startGame(){
   const overlay = document.getElementById('overlay');
@@ -1279,33 +1278,28 @@ function holdBtn(id, key){
   });
 }
 
+/* 👇 THESE MUST BE BELOW */
 holdBtn('btn-left','left');
-
 holdBtn('btn-right','right');
-
 holdBtn('btn-jump','jump');
 
+window.addEventListener('blur',()=>{
+  keys.left=false;
+  keys.right=false;
+  keys.jump=false;
+});
 
-window.addEventListener('blur',()=>{keys.left=false;keys.right=false;keys.jump=false;});
-
-
-let lastTouch=0;
-
-document.addEventListener('touchend',e=>{
-
-  const now=Date.now();
-
-  if(now-lastTouch<300)e.preventDefault();
-
-  lastTouch=now;
-
-},{passive:false});
-
-
+ // This tells the browser to start the animation loop
 loop();
 
+// Standard touch prevention for mobile double-tap zoom
+let lastTouch = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouch < 300) e.preventDefault();
+  lastTouch = now;
+}, {passive: false});
+
 </script>
-
 </body>
-
-</html> 
+</html>
