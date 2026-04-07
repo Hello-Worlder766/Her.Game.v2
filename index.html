@@ -3,7 +3,7 @@
 <html>
 
 <head>
-
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <title>Rescue Nathan! 💕</title>
@@ -1209,11 +1209,15 @@ function showOverlay(title, msg, btnText, cb){
 }
 
 
-document.getElementById('start-btn').onclick=()=>{
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('start-btn').addEventListener('touchstart', startGame);
 
-  document.getElementById('overlay').style.display='none';
-
-  initLevel(level); gameRunning=true;
+function startGame(){
+  const overlay = document.getElementById('overlay');
+  overlay.style.display = 'none';
+  initLevel(level);
+  gameRunning = true;
+}
 
 };
 
